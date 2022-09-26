@@ -1,0 +1,183 @@
+name: Phygital Redemptions CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+env:
+  FOUNDRY_PROFILE: ci
+
+jobs:
+  test:
+    strategy:
+      fail-fast: true
+
+    name: Foundry Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Run Forge build
+        run: |
+          forge --version
+          forge build --sizes
+        id: build
+
+      - name: Run Forge tests
+        run: |
+          forge test -vvv
+        id: forge-test
+
+  gas-snapshot:
+    strategy:
+      fail-fast: true
+
+    name: Foundry Gas Snapshot
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Run Forge gas snapshot check
+        run: |
+          forge snapshot --check --use 0.8.15
+        id: gas-snapshot
+
+  coverage:
+    strategy:
+      fail-fast: true
+
+    name: Foundry Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Install lcov
+        run: |
+          sudo apt update
+          sudo apt -y install lcov
+
+      - name: Run Forge test coverage
+        run: |
+          forge coverage --report lcov
+          lcov --rc lcov_branch_coverage=1 --remove lcov.info -o lcov.info test/utils/* src/helpers/* src/test/* test/deploy/*
+        id: forge-coverage
+
+      - name: Enforce coverage
+        uses: VeryGoodOpenSource/very_good_coverage@v1
+        with:
+          path: './lcov.info'
+          min_coverage: 100
+
+  lint:
+    strategy:
+      fail-fast: true
+
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Setup Node 16
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16.x'
+          cache: 'yarn'
+
+      - name: Install Node dependencies
+        run: |
+          yarn install
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+        
+      - name: Lint
+        run: |
+          yarn lint:check
+        id: lint
+
+  analyze:
+    strategy:
+      fail-fast: true
+
+    name: Static Analysis
+    # TODO: re-enable upon Slither v0.8.4 release
+    if: false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Install dependencies
+        run: |
+          forge install
+        id: install-deps
+
+      - name: Run Slither
+        uses: crytic/slither-action@main
+        id: slither
+        with:
+          slither-args: '--filter-paths "test|helpers" --compile-force-framework foundry --print contract-summary'
+
+  docs:
+    name: Documentation
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Setup Node 16
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16.x'
+          cache: 'yarn'
+
+      - name: Install Node dependencies
+        run: |
+          yarn install
+
+      - name: Generate markdown docs
+        run: |
+          yarn docgen
+        id: docgen
+
+      - name: Deploy docs
+        uses: mhausenblas/mkdocs-deploy-gh-pages@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CONFIG_FILE: mkdocs.yml
+          REQUIREMENTS: doc-requirements.txt

@@ -1,0 +1,25 @@
+# Foundry
+cache/
+out/
+
+# JS
+node_modules/
+dist/
+
+# Hardhat files
+cache_hardhat/
+artifacts/
+
+# Hardhat plugin files
+typechain-types/
+
+# Secrets
+.env
+
+# Coverage
+lcov.info
+report
+
+# Docs
+site
+docs
