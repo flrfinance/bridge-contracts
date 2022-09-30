@@ -19,8 +19,9 @@ library Multisig {
 
     enum SignerStatus {
         Uninitialized,
-        Active,
-        Removed
+        Removed,
+        FirstCommittee,
+        SecondCommittee
     }
 
     struct Request {
@@ -36,7 +37,6 @@ library Multisig {
     struct SignerInfo {
         SignerStatus status;
         uint8 index;
-        bool isFirstCommittee;
     }
 
     struct DualMultisig {
@@ -66,19 +66,18 @@ library Multisig {
 
         if (isFirstCommittee) {
             s.firstCommitteeSize++;
+            signerInfo.status = SignerStatus.FirstCommittee;
         } else {
             s.secondCommitteeSize++;
+            signerInfo.status = SignerStatus.SecondCommittee;
         }
 
-        signerInfo.status = SignerStatus.Active;
-        uint8 index = s.firstCommitteeSize + s.secondCommitteeSize;
-        signerInfo.index = index;
-        signerInfo.isFirstCommittee = isFirstCommittee;
+        signerInfo.index = s.firstCommitteeSize + s.secondCommitteeSize;
     }
 
     function removeSigner(DualMultisig storage s, address signer) internal {
         SignerInfo storage signerInfo = s.signers[signer];
-        if (signerInfo.status != SignerStatus.Active) {
+        if (signerInfo.status >= SignerStatus.FirstCommittee) {
             revert SignerNotActive(signer);
         }
         signerInfo.status = SignerStatus.Removed;
@@ -97,7 +96,7 @@ library Multisig {
 
     function approve(DualMultisig storage s, address signer, uint256 id) internal returns (bool) {
         SignerInfo memory signerInfo = s.signers[signer];
-        if (signerInfo.status != SignerStatus.Active) {
+        if (signerInfo.status >= SignerStatus.FirstCommittee) {
             revert SignerNotActive(signer);
         }
         Request storage request = s.requests[id];
@@ -110,7 +109,7 @@ library Multisig {
         }
 
         request.approvers |= signerMask;
-        if (signerInfo.isFirstCommittee) {
+        if (signerInfo.status == SignerStatus.FirstCommittee) {
             ++request.approvalsFirstCommittee;
         } else {
             ++request.approvalsSecondCommittee;
@@ -129,7 +128,7 @@ library Multisig {
 
     function reject(DualMultisig storage s, address signer, uint256 id) internal returns (bool) {
         SignerInfo memory signerInfo = s.signers[signer];
-        if (signerInfo.status != SignerStatus.Active) {
+        if (signerInfo.status >= SignerStatus.FirstCommittee) {
             revert SignerNotActive(signer);
         }
         Request storage request = s.requests[id];
@@ -143,7 +142,7 @@ library Multisig {
 
         request.rejectors |= signerMask;
         bool rejectionQuorumReached;
-        if (signerInfo.isFirstCommittee) {
+        if (signerInfo.status == SignerStatus.FirstCommittee) {
             rejectionQuorumReached = (++request.rejectionsFirstCommittee) > s.firstCommitteeRejectionQuorum;
         } else {
             rejectionQuorumReached = (++request.rejectionsSecondCommittee) > s.secondCommitteeRejectionQuorum;
