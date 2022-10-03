@@ -1,6 +1,6 @@
 class DualMultisig
     n, m, p, q
-    requests (id => {
+    requests (hash => {
         approvalsA, 
         rejectionsA, 
         approvalsB, 
@@ -12,8 +12,8 @@ class DualMultisig
     })
     points
     totalPoints 
-    approve(address, id, isA):
-        request = requests[id]
+    approve(address, hash, isA):
+        request = requests[hash]
         require that the request status is undecided
         require that the request.signer[address] is false
         request.signer[address] = true
@@ -26,8 +26,8 @@ class DualMultisig
                 points[validator]++
             return true
         return false
-    reject(address, id, isA)
-        request = requests[id]
+    reject(address, hash, isA)
+        request = requests[hash]
         require that the request status is undecided
         require that the request.signer[address] is false
         request.signer[address] = true
@@ -40,8 +40,8 @@ class DualMultisig
                 points[validators]++
             return true
         return false
-    status(id):
-        requests[id].status
+    status(hash):
+        requests[hash].status
     totalPoints():
         totalPoints
     points(address)
@@ -66,29 +66,25 @@ abstract BridgeCommon is AccessControl
     ---
     requests;
     DualMultisig multisig;
-    _approve(id, type):
-        address is whitelisted with type
-        isApproved = multisig.approve(address, id, type)
-        if isApproved:
-            onApprove(id, {token, amount, to})
     approve(id, type, {token, amount, to}):
         bridge is not paused
-        if request of id exist
-            token, amount and to matches the 
-            existing request
-        else 
-            token is whitelisted
-            amount is range of min, max token amount
-            add to requests
-        _approve(id, type)
-    approve(id, type):
-        bridge is not paused
-        request exist with id
-        _approve(id, type)
-    reject(id, type):
+        token is whitelisted
+        amount is range of min, max token amount
+        address is whitelisted with type
+        hash = sha256(id, token, amount, to)
+        isApproved = multisig.approve(address, hash, type)
+        if isApproved:
+            onApprove(id, {token, amount, to})
+            emit some event
+    reject(id, type, {token, amount, to}):
+        hash = sha256(id, token, amount, to)
+        reject(hash, type)
+    reject(hash, type):
         bridge is not paused 
         address is whitelisted with type
-        multisig.reject(address, id, type)
+        isRejected = multisig.reject(address, hash, type)
+        if isRejected:
+            emit some event
     ---
     ... access control methods ...
     whitelist({token, min, max}) only owner 
