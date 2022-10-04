@@ -14,38 +14,33 @@ interface IWrap is IAccessControlEnumerable {
 
     /// @dev Thrown when the token is not whitelisted, the amount
     /// being deposited/approved is not in the range of min/maxAmount
-    /// or the current state of the requests doesn't match the 
+    /// or the current state of the requests doesn't match the
     error InvalidTokenAmount();
+
+    /// @dev Thrown when the token config is invalid
+    error InvalidTokenConfig();
+
+    /// @dev Thrown when the fee being set is higher than the maximum 
+    /// allowed fee
+    error FeeExceedsMaxFee();
 
     /// @dev Emitted when a user deposits
     /// @param id id associated to the request.
     /// @param token token deposited.
     /// @param amount amount of token deposited.
     /// @param to address to release the funds
-    event Deposit(
-        uint256 indexed id,
-        address indexed token,
-        uint256 amount,
-        address to
-    );
+    event Deposit(uint256 indexed id, address indexed token, uint256 amount, address to);
 
     /// @dev Emitted when a request is approved
     /// @param id id associated to the request.
     /// @param token token approved.
     /// @param amount amount of token approved.
     /// @param to address to release the funds
-    event Approved(
-        uint256 indexed id,
-        address indexed token,
-        uint256 amount,
-        address to
-    );
+    event Approved(uint256 indexed id, address indexed token, uint256 amount, address to);
 
     /// @dev Emitted when a request is rejected
     /// @param hash of the request being rejected.
-    event Rejected(
-        bytes32 indexed hash
-    );
+    event Rejected(bytes32 indexed hash);
 
     /// @dev Token info.
     /// @param maxAmount maximum amount allowed to deposit/approve.
@@ -76,7 +71,7 @@ interface IWrap is IAccessControlEnumerable {
     /// @param token token being deposited.
     /// @param amount amount of tokens being deposited.
     /// @param to address to release the tokens.
-    /// @return the id associated to the request. 
+    /// @return the id associated to the request.
     function deposit(address token, uint256 amount, address to) external returns (uint256);
 
     /// @dev Approve request.

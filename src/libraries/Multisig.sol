@@ -156,11 +156,12 @@ library Multisig {
         return s.requests[hash].status;
     }
 
-    /// @dev Returns a total points accumalated by all the signers
-    /// @param s the multisig to check the totalPoints
-    /// @return the total points
-    function totalPoints(DualMultisig storage s) internal view returns (uint64) {
-        return s.totalPoints;
+    /// @dev Returns if a given address is a signer in the multisig.
+    /// @param s the multisig to check the signer.
+    /// @param signer the address to check if its a signer.
+    /// @return true if the provided address is a signer.
+    function isSigner(DualMultisig storage s, address signer) internal view returns (bool) {
+        return s.signers[signer].status >= SignerStatus.FirstCommittee;
     }
 
     /// @dev Returns a points accumalated by a signer
@@ -322,7 +323,8 @@ library Multisig {
     /// @dev Clears the points accumalated by a signer.
     /// @param s the multisig for which the signer points should be cleared
     /// @param signer for whom the points should be cleared
-    function clearPoints(DualMultisig storage s, address signer) internal {
+    /// @return points of the signer
+    function clearPoints(DualMultisig storage s, address signer) internal returns (uint64){
         SignerInfo memory signerInfo = s.signers[signer];
         if (signerInfo.status >= SignerStatus.FirstCommittee) {
             revert SignerNotActive(signer);
@@ -331,5 +333,6 @@ library Multisig {
         uint64 p = s.points[index];
         s.points[index] = 0;
         s.totalPoints -= p;
+        return p;
     }
 }

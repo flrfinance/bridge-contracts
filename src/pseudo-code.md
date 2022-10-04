@@ -99,7 +99,7 @@ BridgeEVM is BridgeCommon
         address is whitelisted with type
         p = multisig.getPoints(address)
         t = multisig.totalPoints()
-        multisigOfType.clearPoints(address)
+        multisig.clearPoints(address)
         for c of whitelisted tokens
             transfer (accumalatedValidatorFees(c) * p / t) tokens of c
     ---
@@ -121,7 +121,7 @@ BridgeFLR is BridgeCommon
         address is whitelisted with type
         p = multisig.getPoints(address)
         t = multisig.totalPoints()
-        multisigOfType.clearPoints(address)
+        multisig.clearPoints(address)
         for c of whitelisted tokens
             transfer (accumalatedValidatorFees(c) * p / t) tokens of c
     claimProtocolFees(token):
