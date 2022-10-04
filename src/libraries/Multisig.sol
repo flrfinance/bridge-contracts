@@ -324,7 +324,7 @@ library Multisig {
     /// @param s the multisig for which the signer points should be cleared
     /// @param signer for whom the points should be cleared
     /// @return points of the signer
-    function clearPoints(DualMultisig storage s, address signer) internal returns (uint64){
+    function clearPoints(DualMultisig storage s, address signer) internal returns (uint64) {
         SignerInfo memory signerInfo = s.signers[signer];
         if (signerInfo.status >= SignerStatus.FirstCommittee) {
             revert SignerNotActive(signer);

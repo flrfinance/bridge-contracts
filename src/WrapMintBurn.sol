@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {IWrapMintBurn} from "./interfaces/IWrapMintBurn.sol";
 import {IERC20MintBurn} from "./interfaces/IERC20MintBurn.sol";
@@ -13,7 +13,7 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
 
     using SafeERC20 for IERC20MintBurn;
 
-    /// @dev max protocol/validator fee that can be set by the owner 
+    /// @dev max protocol/validator fee that can be set by the owner
     uint16 constant maxFeeBPS = 500;
 
     /// @dev mapping to keep track of protocol fees accumalated per token
@@ -22,14 +22,10 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
     /// @dev protocol fees basis point taken on mint and burn
     uint16 public protocolFeeBPS;
 
-    /// @dev validator fees basis points token on mint 
+    /// @dev validator fees basis points token on mint
     uint16 public validatorsFeeBPS;
 
-    constructor(
-        Multisig.Config memory config,
-        uint16 _protocolFeeBPS,
-        uint16 _validatorsFeeBPS
-    ) Wrap(config) {
+    constructor(Multisig.Config memory config, uint16 _protocolFeeBPS, uint16 _validatorsFeeBPS) Wrap(config) {
         configureFees(_protocolFeeBPS, _validatorsFeeBPS);
     }
 
@@ -62,8 +58,9 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
 
     /// @inheritdoc IWrapMintBurn
     function configureFees(uint16 _protocolFeeBPS, uint16 _validatorsFeeBPS) public {
-        if (_protocolFeeBPS > maxFeeBPS || _validatorsFeeBPS > maxFeeBPS) 
+        if (_protocolFeeBPS > maxFeeBPS || _validatorsFeeBPS > maxFeeBPS) {
             revert FeeExceedsMaxFee();
+        }
         protocolFeeBPS = _protocolFeeBPS;
         validatorsFeeBPS = _validatorsFeeBPS;
     }

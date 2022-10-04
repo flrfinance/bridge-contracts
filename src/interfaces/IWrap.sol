@@ -20,7 +20,7 @@ interface IWrap is IAccessControlEnumerable {
     /// @dev Thrown when the token config is invalid
     error InvalidTokenConfig();
 
-    /// @dev Thrown when the fee being set is higher than the maximum 
+    /// @dev Thrown when the fee being set is higher than the maximum
     /// allowed fee
     error FeeExceedsMaxFee();
 

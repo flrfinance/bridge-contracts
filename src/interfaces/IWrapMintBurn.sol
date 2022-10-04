@@ -6,12 +6,12 @@ import {IWrap} from "./IWrap.sol";
 /// @title interface for Mint and Burn side of
 /// of the Wraps contract
 interface IWrapMintBurn is IWrap {
-    /// @dev Get the protocol fees accumalated for a given token 
+    /// @dev Get the protocol fees accumalated for a given token
     /// @param token token address to get the fees.
     /// @return balance protocol fees balance for the token
     function accumalatedProtocolFees(address token) external view returns (uint256 balance);
-    
-    /// @dev Get the total validators fees accumalated for a given token 
+
+    /// @dev Get the total validators fees accumalated for a given token
     /// @param token token address to get the fees.
     /// @return balance validator fees balance for the token
     function accumalatedValidatorsFees(address token) external view returns (uint256 balance);
@@ -29,10 +29,10 @@ interface IWrapMintBurn is IWrap {
     function configureFees(uint16 protocolFeeBPS, uint16 validatorsFeeBPS) external;
 
     /// @dev Allows the validator to claim fees accumalated
-    /// @notice can only be called by a validator 
-    function claimValidatorFees() external; 
+    /// @notice can only be called by a validator
+    function claimValidatorFees() external;
 
     /// @dev Allows the owner to claim the protocol fees
-    /// @notice can only be called by the owner 
+    /// @notice can only be called by the owner
     function claimProtocolFees(address token) external;
 }

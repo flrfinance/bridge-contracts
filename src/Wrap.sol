@@ -21,8 +21,8 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     mapping(address => TokenInfo) public tokenInfos;
 
     /// @dev Array of all the tokens added
-    /// @notice a token in the list might not be active 
-    address[] tokens; 
+    /// @notice a token in the list might not be active
+    address[] tokens;
 
     /// @dev dual multisig to manage signers,
     /// attestations and request quoroum.
@@ -60,9 +60,9 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         _;
     }
 
-    /// @dev Internal function to calculate fees 
-    function calculateFee(uint256 amount, uint16 feeBPS) internal pure returns(uint256) {
-        // 10,000 is 100% 
+    /// @dev Internal function to calculate fees
+    function calculateFee(uint256 amount, uint16 feeBPS) internal pure returns (uint256) {
+        // 10,000 is 100%
         return (amount * feeBPS) / 10000;
     }
 
