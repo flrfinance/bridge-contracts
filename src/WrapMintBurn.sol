@@ -34,26 +34,21 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
         return IERC20MintBurn(token).balanceOf(address(this)) - accumalatedProtocolFees[token];
     }
 
-    function onDeposit(uint256, address token, uint256 amount, address)
-        internal
-        override
-        returns (uint256 depositAmount)
-    {
-        uint256 protocolFee = calculateFee(amount, protocolFeeBPS);
-        accumalatedProtocolFees[token] += protocolFee;
-        depositAmount = amount - protocolFee;
+    function onDeposit(address token, uint256 amount) internal override returns (uint256 fee) {
+        fee = calculateFee(amount, protocolFeeBPS);
+        accumalatedProtocolFees[token] += fee;
 
-        IERC20MintBurn(token).burn(msg.sender, depositAmount);
-        IERC20MintBurn(token).transferFrom(msg.sender, address(this), protocolFee);
+        IERC20MintBurn(token).burn(msg.sender, amount - fee);
+        IERC20MintBurn(token).transferFrom(msg.sender, address(this), fee);
     }
 
-    function onApprove(uint256, address token, uint256 amount, address to) internal override {
+    function onApprove(address token, uint256 amount, address to) internal override returns (uint256 fee) {
         uint256 protocolFee = calculateFee(amount, protocolFeeBPS);
         accumalatedProtocolFees[token] += protocolFee;
-        uint256 totalFee = protocolFee + calculateFee(amount, validatorsFeeBPS);
+        fee = protocolFee + calculateFee(amount, validatorsFeeBPS);
 
-        IERC20MintBurn(token).mint(to, amount - totalFee);
-        IERC20MintBurn(token).mint(address(this), totalFee);
+        IERC20MintBurn(token).mint(to, amount - fee);
+        IERC20MintBurn(token).mint(address(this), fee);
     }
 
     /// @inheritdoc IWrapMintBurn

@@ -36,12 +36,9 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         multisig.configure(config);
     }
 
-    function onDeposit(uint256 id, address token, uint256 amount, address to)
-        internal
-        virtual
-        returns (uint256 depositAmount);
+    function onDeposit(address token, uint256 amount) internal virtual returns (uint256 fee);
 
-    function onApprove(uint256 id, address token, uint256 amount, address to) internal virtual;
+    function onApprove(address token, uint256 amount, address to) internal virtual returns (uint256 fee);
 
     /// @dev Modifier to make a function callable only when the contract is not paused.
     modifier isNotPaused() {
@@ -75,8 +72,8 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     {
         address _to = to == address(0) ? msg.sender : to;
         id = ++depositCount;
-        uint256 amountDeposited = onDeposit(id, token, amount, _to);
-        emit Deposit(id, token, amountDeposited, _to);
+        uint256 fee = onDeposit(token, amount);
+        emit Deposit(id, token, amount - fee, _to, fee);
     }
 
     /// @dev internal function to calculate the hash of the request.
@@ -92,8 +89,8 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     {
         bytes32 hash = hashRequest(id, token, amount, to);
         if (multisig.approve(msg.sender, hash)) {
-            emit Approved(id, token, amount, to);
-            onApprove(id, token, amount, to);
+            uint256 fee = onApprove(token, amount, to);
+            emit Approved(id, token, amount - fee, to, fee);
         }
     }
 

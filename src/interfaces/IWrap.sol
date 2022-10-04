@@ -27,16 +27,18 @@ interface IWrap is IAccessControlEnumerable {
     /// @dev Emitted when a user deposits
     /// @param id id associated to the request.
     /// @param token token deposited.
-    /// @param amount amount of token deposited.
-    /// @param to address to release the funds
-    event Deposit(uint256 indexed id, address indexed token, uint256 amount, address to);
+    /// @param amount amount of tokens deposited.
+    /// @param to address to release the funds.
+    /// @param fee subtracted on the original deposit amount.
+    event Deposit(uint256 indexed id, address indexed token, uint256 amount, address to, uint256 fee);
 
     /// @dev Emitted when a request is approved
     /// @param id id associated to the request.
     /// @param token token approved.
-    /// @param amount amount of token approved.
-    /// @param to address to release the funds
-    event Approved(uint256 indexed id, address indexed token, uint256 amount, address to);
+    /// @param amount amount of tokens recieved by the to address (approved - fee).
+    /// @param to address to release the funds.
+    /// @param fee charged on the approved amount.
+    event Approved(uint256 indexed id, address indexed token, uint256 amount, address to, uint256 fee);
 
     /// @dev Emitted when a request is rejected
     /// @param hash of the request being rejected.
