@@ -52,9 +52,17 @@ library Multisig {
 
     /// @dev Request statuses.
     enum RequestStatus {
-        Undecided,
+        NULL, // request which doesn't exist
+        Undecided, // request might has few approvals/ rejections but hasn't reached a quoroum
         Accepted,
         Rejected
+    }
+
+    enum RequestStatusTransition {
+        Unchanged,
+        NULLToUndecided,
+        UndecidedToAccepted,
+        UndecidedToRejected
     }
 
     /// @dev Signer statuses.
@@ -250,22 +258,24 @@ library Multisig {
     /// @param s the multisig for which request should be approved.
     /// @param signer the signer approving the request.
     /// @param hash the hash of the request being approved.
-    /// @return bool true if the quorum was reached among both the
-    /// committees and the request is accepted.
-    function approve(DualMultisig storage s, address signer, bytes32 hash) internal returns (bool) {
+    /// @return the request status transition.
+    function approve(DualMultisig storage s, address signer, bytes32 hash) internal returns (RequestStatusTransition) {
         SignerInfo memory signerInfo = s.signers[signer];
         if (signerInfo.status >= SignerStatus.FirstCommittee) {
             revert SignerNotActive(signer);
         }
         Request storage request = s.requests[hash];
-        if (request.status != RequestStatus.Undecided) {
+        // if request is accepted or rejected then revert
+        if (request.status > RequestStatus.Undecided) {
             revert RequestDecided(request.status);
         }
         uint256 signerMask = 1 << signerInfo.index;
+        // check if the signer has already signed
         if ((signerMask & (request.approvers | request.rejectors)) != 0) {
             revert SignerSigned();
         }
 
+        // add the signers to bitmask of approvers
         request.approvers |= signerMask;
         if (signerInfo.status == SignerStatus.FirstCommittee) {
             ++request.approvalsFirstCommittee;
@@ -273,15 +283,20 @@ library Multisig {
             ++request.approvalsSecondCommittee;
         }
 
+        // if the quoroum has reached, update points and increment points
         if (
             request.approvalsFirstCommittee >= s.firstCommitteeAcceptanceQuorum
                 && request.approvalsSecondCommittee >= s.secondCommitteeAcceptanceQuorum
         ) {
             request.status = RequestStatus.Accepted;
             incrementPoints(s, request.approvers);
-            return true;
+            return RequestStatusTransition.UndecidedToAccepted;
+        } else if (request.status == RequestStatus.NULL) {
+            // if this the first approval change the request status to undecided
+            request.status = RequestStatus.Undecided;
+            return RequestStatusTransition.NULLToUndecided;
         }
-        return false;
+        return RequestStatusTransition.Unchanged;
     }
 
     /// @dev Reject a request.
@@ -290,20 +305,25 @@ library Multisig {
     /// @param hash the hash of the request being rejected.
     /// @return bool true if the quorum was reached in either of the
     /// committees and the request is rejected.
-    function reject(DualMultisig storage s, address signer, bytes32 hash) internal returns (bool) {
+    function reject(DualMultisig storage s, address signer, bytes32 hash) internal returns (RequestStatusTransition) {
         SignerInfo memory signerInfo = s.signers[signer];
         if (signerInfo.status >= SignerStatus.FirstCommittee) {
             revert SignerNotActive(signer);
         }
         Request storage request = s.requests[hash];
+        // notice that a non existant request (request with status NULL) can't be
+        // rejected. This is required to avoid malicious signers rejecting random
+        // hashes to trick the point system.
         if (request.status != RequestStatus.Undecided) {
             revert RequestDecided(request.status);
         }
         uint256 signerMask = 1 << signerInfo.index;
+        // check if the signer has already signed
         if ((signerMask & (request.approvers | request.rejectors)) != 0) {
             revert SignerSigned();
         }
 
+        // add the signers to bitmask of approvers
         request.rejectors |= signerMask;
         bool rejectionQuorumReached;
         if (signerInfo.status == SignerStatus.FirstCommittee) {
@@ -312,12 +332,13 @@ library Multisig {
             rejectionQuorumReached = (++request.rejectionsSecondCommittee) >= s.secondCommitteeRejectionQuorum;
         }
 
+        // if either of the committee rejects a request it gets permanently rejected
         if (rejectionQuorumReached) {
             request.status = RequestStatus.Rejected;
             incrementPoints(s, request.rejectors);
-            return true;
+            return RequestStatusTransition.UndecidedToRejected;
         }
-        return false;
+        return RequestStatusTransition.Unchanged;
     }
 
     /// @dev Clears the points accumalated by a signer.

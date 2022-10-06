@@ -24,18 +24,28 @@ interface IWrap is IAccessControlEnumerable {
     /// allowed fee
     error FeeExceedsMaxFee();
 
+    /// @dev Thrown when the id is not same as the approveIndex
+    error InvalidId();
+
     /// @dev Emitted when a user deposits
     /// @param id id associated to the request.
     /// @param token token deposited.
-    /// @param amount amount of tokens deposited.
+    /// @param amount amount of tokens deposited (amount deposited by user - fee).
     /// @param to address to release the funds.
     /// @param fee subtracted on the original deposit amount.
     event Deposit(uint256 indexed id, address indexed token, uint256 amount, address to, uint256 fee);
 
+    /// @dev Emitted when a new request has been created
+    /// @param id id associated to the request.
+    /// @param token token requested.
+    /// @param amount amount of tokens requested.
+    /// @param to address to release the funds.
+    event Requested(uint256 indexed id, address indexed token, uint256 amount, address to);
+
     /// @dev Emitted when a request is approved
     /// @param id id associated to the request.
     /// @param token token approved.
-    /// @param amount amount of tokens recieved by the to address (approved - fee).
+    /// @param amount amount approved (amount of token received by to address + fee).
     /// @param to address to release the funds.
     /// @param fee charged on the approved amount.
     event Approved(uint256 indexed id, address indexed token, uint256 amount, address to, uint256 fee);
@@ -57,6 +67,13 @@ interface IWrap is IAccessControlEnumerable {
     /// @return paused True if the contract is paused,
     /// false otherwise.
     function paused() external view returns (bool paused);
+
+    /// @dev Returns the number of deposits.
+    function depositIndex() external view returns (uint256);
+
+    /// @dev Returns the number of approvals.
+    /// @notice this is also the next request id being approved.
+    function approveIndex() external view returns (uint256);
 
     /// @dev Set to the token configuration.
     /// @param tokenInfo the token token configuration.
@@ -89,10 +106,6 @@ interface IWrap is IAccessControlEnumerable {
     /// @param amount amount of tokens being rejected.
     /// @param to address to release the tokens.
     function reject(uint256 id, address token, uint256 amount, address to) external;
-
-    /// @dev Reject request.
-    /// @param hash of the request being rejected.
-    function reject(bytes32 hash) external;
 
     /// @dev Pauses the contract.
     /// @notice the contract can be paused by all addresses

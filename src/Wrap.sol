@@ -28,9 +28,12 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     /// attestations and request quoroum.
     Multisig.DualMultisig internal multisig;
 
-    /// @dev the number of deposits made
-    /// so far.
-    uint256 internal depositCount;
+    /// @dev the number of deposits.
+    uint256 public depositIndex;
+
+    /// @dev the number of approvals.
+    /// @notice this is also the next request id being approved.
+    uint256 public approveIndex;
 
     constructor(Multisig.Config memory config) {
         multisig.configure(config);
@@ -71,7 +74,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         returns (uint256 id)
     {
         address _to = to == address(0) ? msg.sender : to;
-        id = ++depositCount;
+        id = ++depositIndex;
         uint256 fee = onDeposit(token, amount);
         emit Deposit(id, token, amount - fee, _to, fee);
     }
@@ -87,22 +90,30 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         isNotPaused
         isValidTokenAmount(token, amount)
     {
+        if (id != approveIndex) {
+            revert InvalidId();
+        }
+
         bytes32 hash = hashRequest(id, token, amount, to);
-        if (multisig.approve(msg.sender, hash)) {
+        Multisig.RequestStatusTransition status = multisig.approve(msg.sender, hash);
+
+        if (status == Multisig.RequestStatusTransition.NULLToUndecided) {
+            emit Requested(id, token, amount, to);
+        } else if (status == Multisig.RequestStatusTransition.UndecidedToAccepted) {
+            ++approveIndex;
             uint256 fee = onApprove(token, amount, to);
-            emit Approved(id, token, amount - fee, to, fee);
+            emit Approved(id, token, amount, to, fee);
         }
     }
 
     // @inheritdoc IWrap
-    function reject(uint256 id, address token, uint256 amount, address to) external isValidTokenAmount(token, amount) {
-        bytes32 hash = hashRequest(id, token, amount, to);
-        reject(hash);
-    }
+    function reject(uint256 id, address token, uint256 amount, address to) external isNotPaused isValidTokenAmount(token, amount) {
+        if (id != approveIndex) {
+            revert InvalidId();
+        }
 
-    // @inheritdoc IWrap
-    function reject(bytes32 hash) public isNotPaused {
-        if (multisig.reject(msg.sender, hash)) {
+        bytes32 hash = hashRequest(id, token, amount, to);
+        if (multisig.reject(msg.sender, hash) == Multisig.RequestStatusTransition.UndecidedToRejected) {
             emit Rejected(hash);
         }
     }
