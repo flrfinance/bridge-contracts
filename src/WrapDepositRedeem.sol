@@ -37,7 +37,7 @@ contract WrapDepositRedeem is IWrapDepositRedeem, Wrap {
         return 0;
     }
 
-    function onApprove(address, uint256 amount, address) internal view override returns (uint256 fee) {
+    function onExecute(address, uint256 amount, address) internal view override returns (uint256 fee) {
         fee = calculateFee(amount, validatorsFeeBPS);
     }
 

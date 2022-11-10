@@ -24,10 +24,6 @@ library Multisig {
     /// new signers can not be added.
     error MaxCommitteeSizeReached();
 
-    /// @dev thrown if the request is already approved or
-    /// rejected and additional action is not allowed.
-    error RequestDecided(RequestStatus status);
-
     /// @dev thrown if signer tries to double sign for
     /// the same request .
     error SignerSigned();
@@ -35,6 +31,14 @@ library Multisig {
     /// @dev thrown if the configuration parms being
     /// set is not valid.
     error InvalidConfiguration();
+
+    /// @dev thrown when the id has already been assigned
+    /// to an apprroved request.
+    error InvalidId();
+
+    /// @dev thrown when a request too far in future or not yet
+    /// approved is being executed
+    error InvalidExecuteRequest();
 
     /// @dev maximum number of members in each committee.
     /// @notice that this number can not be further increased
@@ -53,16 +57,14 @@ library Multisig {
     /// @dev Request statuses.
     enum RequestStatus {
         NULL, // request which doesn't exist
-        Undecided, // request might has few approvals/ rejections but hasn't reached a quoroum
-        Accepted,
-        Rejected
+        Undecided, // request hasn't reached a quoroum
+        Accepted // request approved
     }
 
     enum RequestStatusTransition {
         Unchanged,
         NULLToUndecided,
-        UndecidedToAccepted,
-        UndecidedToRejected
+        UndecidedToAccepted
     }
 
     /// @dev Signer statuses.
@@ -76,29 +78,20 @@ library Multisig {
     /// @dev Request info.
     /// @param approvalsFirstCommittee number of approvals
     /// by the first committee.
-    /// @param rejectionsFirstCommittee number of rejections
-    /// by the first committee.
-    /// @param approvalSsecondCommittee number of approvals
-    /// by the second committee.
-    /// @param rejectionSsecondCommittee number of rejections
+    /// @param approvalsSecondCommittee number of approvals
     /// by the second committee.
     /// @param status status of the request.
     /// @param approvers bitmask for signers from first and
     /// second committee committee that have accepted the request.
-    /// @param rejectors bitmask for signers from first and
-    /// second committee committee that have rejected the request.
-    /// @notice approvers and rejectors are bitmasks. For eg. a set
+    /// @notice approvers is a bitmask. For eg. a set
     /// bit at position 2 in the approvers represents that the signer
     /// with index has approved the request.
     struct Request {
         uint8 approvalsFirstCommittee; // slot 1 (0 - 7 bits)
-        uint8 rejectionsFirstCommittee; // slot 1 (8 - 15 bits)
-        uint8 approvalsSecondCommittee; // slot 1 (16 - 23 bits)
-        uint8 rejectionsSecondCommittee; // slot 1 (24 - 31 bits)
-        RequestStatus status; // slot 1 (32 - 39 bits)
-        // slot1 (40 - 255 spare bits)
+        uint8 approvalsSecondCommittee; // slot 1 (8 - 15 bits)
+        RequestStatus status; // slot 1 (16 - 23 bits)
+        // slot1 (23 - 255 spare bits)
         uint256 approvers; // slot 2
-        uint256 rejectors; // slot 3
     }
 
     /// @dev Signer info.
@@ -112,48 +105,40 @@ library Multisig {
     /// @dev DualMultisig
     /// @param firstCommitteeAcceptanceQuorum number of acceptance
     /// required to reach acceptance quoroum in the first committee.
-    /// @param firstCommitteeRejectionQuorum number of rejections
-    /// required to reach rejection quoroum in the first committee.
     /// @param secondCommitteeAcceptanceQuorum number of acceptance
     /// required to reach acceptance quoroum in the second committee.
-    /// @param secondCommitteeRejectionQuorum number of rejections
-    /// required to reach rejection quoroum in the second committee.
     /// @param firstCommitteeSize size of the first committee.
     /// @param secondCommitteeSize size of the second committee.
     /// @param totalPoints total points accumalated among all the signers
+    /// @param lastExecutedIndex index of last executed request
     /// @param points an array of points where element i is the points
     /// accumalated by signer with index i.
     /// @param signers map signer address to signer info.
     /// @param requests maps request hash to request info.
+    /// @param approvedRequests approved request for an id
     struct DualMultisig {
         uint8 firstCommitteeAcceptanceQuorum; // slot 1 (0 - 7bits)
-        uint8 firstCommitteeRejectionQuorum; // slot 1 (8 - 15bits)
-        uint8 secondCommitteeAcceptanceQuorum; // slot 1 (16 - 23bits)
-        uint8 secondCommitteeRejectionQuorum; // slot 1 (24 - 31bits)
-        uint8 firstCommitteeSize; // slot 1 (32 - 39bits)
-        uint8 secondCommitteeSize; // slot 1 (40 - 47bits)
-        uint64 totalPoints; // slot 1 (48 - 111 bits)
-        // slot1 (112 - 255 spare bits)
+        uint8 secondCommitteeAcceptanceQuorum; // slot 1 (8 - 15bits)
+        uint8 firstCommitteeSize; // slot 1 (16 - 23bits)
+        uint8 secondCommitteeSize; // slot 1 (24 - 31bits)
+        uint64 totalPoints; // slot 1 (32 - 95 bits)
+        // slot1 (95 - 255 spare bits)
+        uint256 lastExecutedIndex;
         uint64[maxSignersSize] points;
         mapping(address => SignerInfo) signers;
         mapping(bytes32 => Request) requests;
+        mapping(uint256 => bytes32) approvedRequests;
     }
 
     /// @param firstCommitteeAcceptanceQuorum number of acceptance
     /// required to reach acceptance quoroum in the first committee.
-    /// @param firstCommitteeRejectionQuorum number of rejections
-    /// required to reach rejection quoroum in the first committee.
     /// @param secondCommitteeAcceptanceQuorum number of acceptance
     /// required to reach acceptance quoroum in the second committee.
-    /// @param secondCommitteeRejectionQuorum number of rejections
-    /// required to reach rejection quoroum in the second committee.
     /// @notice all of the config members should be > 0 and <=
     /// maxCommitteeSize
     struct Config {
         uint8 firstCommitteeAcceptanceQuorum;
-        uint8 firstCommitteeRejectionQuorum;
         uint8 secondCommitteeAcceptanceQuorum;
-        uint8 secondCommitteeRejectionQuorum;
     }
 
     /// @dev Returns a request status
@@ -189,15 +174,11 @@ library Multisig {
         if (
             c.firstCommitteeAcceptanceQuorum == 0 || c.firstCommitteeAcceptanceQuorum > maxCommitteeSize
                 || c.secondCommitteeAcceptanceQuorum == 0 || c.secondCommitteeAcceptanceQuorum > maxCommitteeSize
-                || c.firstCommitteeRejectionQuorum == 0 || c.firstCommitteeRejectionQuorum > maxCommitteeSize
-                || c.secondCommitteeRejectionQuorum == 0 || c.secondCommitteeRejectionQuorum > maxCommitteeSize
         ) {
             revert InvalidConfiguration();
         }
         s.firstCommitteeAcceptanceQuorum = c.firstCommitteeAcceptanceQuorum;
-        s.firstCommitteeRejectionQuorum = c.firstCommitteeRejectionQuorum;
         s.secondCommitteeAcceptanceQuorum = c.secondCommitteeAcceptanceQuorum;
-        s.secondCommitteeRejectionQuorum = c.secondCommitteeRejectionQuorum;
     }
 
     /// @dev Adds a new signer.
@@ -254,24 +235,34 @@ library Multisig {
         s.totalPoints += count;
     }
 
-    /// @dev Approve a request.
+    /// @dev Approve a request if its not already approved.
     /// @param s the multisig for which request should be approved.
     /// @param signer the signer approving the request.
     /// @param hash the hash of the request being approved.
     /// @return the request status transition.
-    function approve(DualMultisig storage s, address signer, bytes32 hash) internal returns (RequestStatusTransition) {
+    function tryApprove(DualMultisig storage s, address signer, bytes32 hash, uint256 id)
+        internal
+        returns (RequestStatusTransition)
+    {
+        Request storage request = s.requests[hash];
+        // if request is accepted then simply return
+        if (request.status == RequestStatus.Accepted) {
+            return RequestStatusTransition.Unchanged;
+        }
+
         SignerInfo memory signerInfo = s.signers[signer];
+        // make sure the signer is valid
         if (signerInfo.status >= SignerStatus.FirstCommittee) {
             revert SignerNotActive(signer);
         }
-        Request storage request = s.requests[hash];
-        // if request is accepted or rejected then revert
-        if (request.status > RequestStatus.Undecided) {
-            revert RequestDecided(request.status);
+        // if another request with the same id is approved
+        if (s.approvedRequests[id] != bytes32(0)) {
+            revert InvalidId();
         }
+
         uint256 signerMask = 1 << signerInfo.index;
         // check if the signer has already signed
-        if ((signerMask & (request.approvers | request.rejectors)) != 0) {
+        if ((signerMask & request.approvers) != 0) {
             revert SignerSigned();
         }
 
@@ -289,6 +280,7 @@ library Multisig {
                 && request.approvalsSecondCommittee >= s.secondCommitteeAcceptanceQuorum
         ) {
             request.status = RequestStatus.Accepted;
+            s.approvedRequests[id] = hash;
             incrementPoints(s, request.approvers);
             return RequestStatusTransition.UndecidedToAccepted;
         } else if (request.status == RequestStatus.NULL) {
@@ -299,46 +291,17 @@ library Multisig {
         return RequestStatusTransition.Unchanged;
     }
 
-    /// @dev Reject a request.
-    /// @param s the multisig for which request should be rejected.
-    /// @param signer the signer rejecting the request.
-    /// @param hash the hash of the request being rejected.
-    /// @return bool true if the quorum was reached in either of the
-    /// committees and the request is rejected.
-    function reject(DualMultisig storage s, address signer, bytes32 hash) internal returns (RequestStatusTransition) {
-        SignerInfo memory signerInfo = s.signers[signer];
-        if (signerInfo.status >= SignerStatus.FirstCommittee) {
-            revert SignerNotActive(signer);
+    /// @dev try to execute the next approved request.
+    /// @param s the multisig for which request should be executed.
+    /// @param hash the hash of the request being executed.
+    /// @param id the id of the request being executed.
+    /// @return true if execution was successful.
+    function tryExecute(DualMultisig storage s, bytes32 hash, uint256 id) internal returns (bool) {
+        if (id == s.lastExecutedIndex + 1 && s.approvedRequests[id] == hash) {
+            s.lastExecutedIndex = id;
+            return true;
         }
-        Request storage request = s.requests[hash];
-        // notice that a non existant request (request with status NULL) can't be
-        // rejected. This is required to avoid malicious signers rejecting random
-        // hashes to trick the point system.
-        if (request.status != RequestStatus.Undecided) {
-            revert RequestDecided(request.status);
-        }
-        uint256 signerMask = 1 << signerInfo.index;
-        // check if the signer has already signed
-        if ((signerMask & (request.approvers | request.rejectors)) != 0) {
-            revert SignerSigned();
-        }
-
-        // add the signers to bitmask of approvers
-        request.rejectors |= signerMask;
-        bool rejectionQuorumReached;
-        if (signerInfo.status == SignerStatus.FirstCommittee) {
-            rejectionQuorumReached = (++request.rejectionsFirstCommittee) >= s.firstCommitteeRejectionQuorum;
-        } else {
-            rejectionQuorumReached = (++request.rejectionsSecondCommittee) >= s.secondCommitteeRejectionQuorum;
-        }
-
-        // if either of the committee rejects a request it gets permanently rejected
-        if (rejectionQuorumReached) {
-            request.status = RequestStatus.Rejected;
-            incrementPoints(s, request.rejectors);
-            return RequestStatusTransition.UndecidedToRejected;
-        }
-        return RequestStatusTransition.Unchanged;
+        return false;
     }
 
     /// @dev Clears the points accumalated by a signer.

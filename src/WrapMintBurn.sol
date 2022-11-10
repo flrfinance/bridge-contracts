@@ -42,7 +42,7 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
         IERC20MintBurn(token).transferFrom(msg.sender, address(this), fee);
     }
 
-    function onApprove(address token, uint256 amount, address to) internal override returns (uint256 fee) {
+    function onExecute(address token, uint256 amount, address to) internal override returns (uint256 fee) {
         uint256 protocolFee = calculateFee(amount, protocolFeeBPS);
         accumalatedProtocolFees[token] += protocolFee;
         fee = protocolFee + calculateFee(amount, validatorsFeeBPS);

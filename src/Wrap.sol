@@ -31,17 +31,13 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     /// @dev the number of deposits.
     uint256 public depositIndex;
 
-    /// @dev the number of approvals.
-    /// @notice this is also the next request id being approved.
-    uint256 public approveIndex;
-
     constructor(Multisig.Config memory config) {
         multisig.configure(config);
     }
 
     function onDeposit(address token, uint256 amount) internal virtual returns (uint256 fee);
 
-    function onApprove(address token, uint256 amount, address to) internal virtual returns (uint256 fee);
+    function onExecute(address token, uint256 amount, address to) internal virtual returns (uint256 fee);
 
     /// @dev Modifier to make a function callable only when the contract is not paused.
     modifier isNotPaused() {
@@ -60,6 +56,10 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         _;
     }
 
+    function lastExecutedIndex() external view returns (uint256) {
+        return multisig.lastExecutedIndex;
+    }
+
     /// @dev Internal function to calculate fees
     function calculateFee(uint256 amount, uint16 feeBPS) internal pure returns (uint256) {
         // 10,000 is 100%
@@ -74,7 +74,8 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         returns (uint256 id)
     {
         address _to = to == address(0) ? msg.sender : to;
-        id = ++depositIndex;
+        id = depositIndex;
+        depositIndex++;
         uint256 fee = onDeposit(token, amount);
         emit Deposit(id, token, amount - fee, _to, fee);
     }
@@ -85,36 +86,32 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     }
 
     // @inheritdoc IWrap
-    function approve(uint256 id, address token, uint256 amount, address to)
-        external
+    function approveExecute(uint256 id, address token, uint256 amount, address to)
+        public
         isNotPaused
         isValidTokenAmount(token, amount)
     {
-        if (id != approveIndex) {
-            revert InvalidId();
+        // if the request id is lower than the last executed id then simply ignore the request
+        if (id < multisig.lastExecutedIndex) {
+            return;
         }
 
         bytes32 hash = hashRequest(id, token, amount, to);
-        Multisig.RequestStatusTransition status = multisig.approve(msg.sender, hash);
-
-        if (status == Multisig.RequestStatusTransition.NULLToUndecided) {
+        Multisig.RequestStatusTransition transition = multisig.tryApprove(msg.sender, hash, id);
+        if (transition == Multisig.RequestStatusTransition.NULLToUndecided) {
             emit Requested(id, token, amount, to);
-        } else if (status == Multisig.RequestStatusTransition.UndecidedToAccepted) {
-            ++approveIndex;
-            uint256 fee = onApprove(token, amount, to);
-            emit Approved(id, token, amount, to, fee);
+        }
+
+        if (multisig.tryExecute(hash, id)) {
+            uint256 fee = onExecute(token, amount, to);
+            emit Executed(id, token, amount, to, fee);
         }
     }
 
     // @inheritdoc IWrap
-    function reject(uint256 id, address token, uint256 amount, address to) external isNotPaused isValidTokenAmount(token, amount) {
-        if (id != approveIndex) {
-            revert InvalidId();
-        }
-
-        bytes32 hash = hashRequest(id, token, amount, to);
-        if (multisig.reject(msg.sender, hash) == Multisig.RequestStatusTransition.UndecidedToRejected) {
-            emit Rejected(hash);
+    function batchApproveExecute(RequestInfo[] calldata requests) external {
+        for (uint256 i = 0; i < requests.length; i++) {
+            approveExecute(requests[i].id, requests[i].token, requests[i].amount, requests[i].to);
         }
     }
 
