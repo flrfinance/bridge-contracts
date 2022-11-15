@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.15;
 
-import {IAccessControlEnumerable} from "@openzeppelin/contracts/access/IAccessControlEnumerable.sol";
+import {
+    IAccessControlEnumerable
+} from "@openzeppelin/contracts/access/IAccessControlEnumerable.sol";
 
-import {Multisig} from "../libraries/Multisig.sol";
+import { Multisig } from "../libraries/Multisig.sol";
 
 /// @title Common interface for Wrap contracts
 /// on FLR and EVM chains
@@ -33,26 +35,39 @@ interface IWrap is IAccessControlEnumerable {
     /// @param amount amount of tokens deposited (amount deposited by user - fee).
     /// @param to address to release the funds.
     /// @param fee subtracted on the original deposit amount.
-    event Deposit(uint256 indexed id, address indexed token, uint256 amount, address to, uint256 fee);
+    event Deposit(
+        uint256 indexed id,
+        address indexed token,
+        uint256 amount,
+        address to,
+        uint256 fee
+    );
 
     /// @dev Emitted when a new request has been created
     /// @param id id associated to the request.
     /// @param token token requested.
     /// @param amount amount of tokens requested.
     /// @param to address to release the funds.
-    event Requested(uint256 indexed id, address indexed token, uint256 amount, address to);
+    event Requested(
+        uint256 indexed id,
+        address indexed token,
+        uint256 amount,
+        address to
+    );
 
-    /// @dev Emitted when a request is approved
+    /// @dev Emitted when a request is executed
     /// @param id id associated to the request.
     /// @param token token approved.
     /// @param amount amount approved (amount of token received by to address + fee).
     /// @param to address to release the funds.
     /// @param fee charged on the approved amount.
-    event Approved(uint256 indexed id, address indexed token, uint256 amount, address to, uint256 fee);
-
-    /// @dev Emitted when a request is rejected
-    /// @param hash of the request being rejected.
-    event Rejected(bytes32 indexed hash);
+    event Executed(
+        uint256 indexed id,
+        address indexed token,
+        uint256 amount,
+        address to,
+        uint256 fee
+    );
 
     /// @dev Token info.
     /// @param maxAmount maximum amount allowed to deposit/approve.
@@ -63,6 +78,18 @@ interface IWrap is IAccessControlEnumerable {
         uint256 minAmount;
     }
 
+    /// @dev Request info.
+    /// @param id id associated to the request.
+    /// @param token token requested.
+    /// @param amount amount of tokens requested.
+    /// @param to address to release the funds.
+    struct RequestInfo {
+        uint256 id;
+        address token;
+        uint256 amount;
+        address to;
+    }
+
     /// @dev Returns whether the contract has been paused.
     /// @return paused True if the contract is paused,
     /// false otherwise.
@@ -71,15 +98,15 @@ interface IWrap is IAccessControlEnumerable {
     /// @dev Returns the number of deposits.
     function depositIndex() external view returns (uint256);
 
-    /// @dev Returns the number of approvals.
-    /// @notice this is also the next request id being approved.
-    function approveIndex() external view returns (uint256);
+    /// @dev Returns the index of request that will be executed next
+    function nextExecutionIndex() external view returns (uint256);
 
     /// @dev Set to the token configuration.
     /// @param tokenInfo the token token configuration.
     /// @notice set maxAmount to 0 to disable the token.
     /// @notice can be only called by the owner.
-    function configureToken(address token, TokenInfo calldata tokenInfo) external;
+    function configureToken(address token, TokenInfo calldata tokenInfo)
+        external;
 
     /// @dev Set the multisig config.
     /// @param config multisig config.
@@ -91,21 +118,27 @@ interface IWrap is IAccessControlEnumerable {
     /// @param amount amount of tokens being deposited.
     /// @param to address to release the tokens.
     /// @return the id associated to the request.
-    function deposit(address token, uint256 amount, address to) external returns (uint256);
+    function deposit(
+        address token,
+        uint256 amount,
+        address to
+    ) external returns (uint256);
 
-    /// @dev Approve request.
-    /// @param id id of the request being approved.
-    /// @param token token being approved.
-    /// @param amount amount of tokens being approved.
-    /// @param to address to release the tokens.
-    function approve(uint256 id, address token, uint256 amount, address to) external;
+    /// @dev Approve and/or execute request.
+    /// @param id id associated to the request.
+    /// @param token token requested.
+    /// @param amount amount of tokens requested.
+    /// @param to address to release the funds.
+    function approveExecute(
+        uint256 id,
+        address token,
+        uint256 amount,
+        address to
+    ) external;
 
-    /// @dev Reject request.
-    /// @param id id of the request being rejected.
-    /// @param token token being rejected.
-    /// @param amount amount of tokens being rejected.
-    /// @param to address to release the tokens.
-    function reject(uint256 id, address token, uint256 amount, address to) external;
+    /// @dev Approve and/or execute requests.
+    /// @param requests requests to approve and/or execute.
+    function batchApproveExecute(RequestInfo[] calldata requests) external;
 
     /// @dev Pauses the contract.
     /// @notice the contract can be paused by all addresses
@@ -116,4 +149,15 @@ interface IWrap is IAccessControlEnumerable {
     /// @notice the contract can be paused by all addresses
     /// with pause role but can be unpaused only by the admin
     function unpause() external;
+
+    /// @dev add signer to the contract.
+    /// @param signer address of the signer.
+    /// @param isFirstCommittee true if the signer is from first committee.
+    /// @notice this function should be only called by the owner of the contract.
+    function addSigner(address signer, bool isFirstCommittee) external;
+
+    /// @dev remove signer from the contract.
+    /// @param signer address of the signer.
+    /// @notice this function should be only called by the owner of the contract.
+    function removeSigner(address signer) external;
 }

@@ -8,7 +8,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import { IWrapDepositRedeem } from "./interfaces/IWrapDepositRedeem.sol";
 import { Multisig } from "./libraries/Multisig.sol";
-import { Wrap } from "./wrap.sol";
+import { Wrap } from "./Wrap.sol";
 
 contract WrapDepositRedeem is IWrapDepositRedeem, Wrap {
     using Multisig for Multisig.DualMultisig;
@@ -55,11 +55,23 @@ contract WrapDepositRedeem is IWrapDepositRedeem, Wrap {
     }
 
     /// @inheritdoc IWrapDepositRedeem
-    function configureFees(uint16 _validatorsFeeBPS) public {
+    function configureFees(uint16 _validatorsFeeBPS)
+        public
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         if (_validatorsFeeBPS > maxFeeBPS) {
             revert FeeExceedsMaxFee();
         }
         validatorsFeeBPS = _validatorsFeeBPS;
+    }
+
+    /// @inheritdoc IWrapDepositRedeem
+    function addToken(
+        address token,
+        address mirrorToken,
+        TokenInfo calldata tokenInfo
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _addToken(token, mirrorToken, tokenInfo);
     }
 
     /// @inheritdoc IWrapDepositRedeem

@@ -24,10 +24,6 @@ library Multisig {
     /// new signers can not be added.
     error MaxCommitteeSizeReached();
 
-    /// @dev thrown if signer tries to double sign for
-    /// the same request .
-    error SignerSigned();
-
     /// @dev thrown if the configuration parms being
     /// set is not valid.
     error InvalidConfiguration();
@@ -110,7 +106,7 @@ library Multisig {
     /// @param firstCommitteeSize size of the first committee.
     /// @param secondCommitteeSize size of the second committee.
     /// @param totalPoints total points accumalated among all the signers
-    /// @param lastExecutedIndex index of last executed request
+    /// @param nextExecutionIndex index of the request that will be executed next
     /// @param points an array of points where element i is the points
     /// accumalated by signer with index i.
     /// @param signers map signer address to signer info.
@@ -123,7 +119,7 @@ library Multisig {
         uint8 secondCommitteeSize; // slot 1 (24 - 31bits)
         uint64 totalPoints; // slot 1 (32 - 95 bits)
         // slot1 (95 - 255 spare bits)
-        uint256 lastExecutedIndex;
+        uint256 nextExecutionIndex;
         uint64[maxSignersSize] points;
         mapping(address => SignerInfo) signers;
         mapping(bytes32 => Request) requests;
@@ -145,7 +141,11 @@ library Multisig {
     /// @param s the multisig to check the request
     /// @param hash the hash of the request being checked
     /// @return the request status
-    function status(DualMultisig storage s, bytes32 hash) internal view returns (RequestStatus) {
+    function status(DualMultisig storage s, bytes32 hash)
+        internal
+        view
+        returns (RequestStatus)
+    {
         return s.requests[hash].status;
     }
 
@@ -153,7 +153,11 @@ library Multisig {
     /// @param s the multisig to check the signer.
     /// @param signer the address to check if its a signer.
     /// @return true if the provided address is a signer.
-    function isSigner(DualMultisig storage s, address signer) internal view returns (bool) {
+    function isSigner(DualMultisig storage s, address signer)
+        internal
+        view
+        returns (bool)
+    {
         return s.signers[signer].status >= SignerStatus.FirstCommittee;
     }
 
@@ -161,7 +165,11 @@ library Multisig {
     /// @param s the multisig to check the points
     /// @param signer the address of the signer
     /// @return the points accumalted by the signer
-    function points(DualMultisig storage s, address signer) internal view returns (uint64) {
+    function points(DualMultisig storage s, address signer)
+        internal
+        view
+        returns (uint64)
+    {
         SignerInfo memory signerInfo = s.signers[signer];
         if (signerInfo.status >= SignerStatus.FirstCommittee) {
             revert SignerNotActive(signer);
@@ -172,8 +180,10 @@ library Multisig {
     /// @dev Configures the multisig params
     function configure(DualMultisig storage s, Config memory c) internal {
         if (
-            c.firstCommitteeAcceptanceQuorum == 0 || c.firstCommitteeAcceptanceQuorum > maxCommitteeSize
-                || c.secondCommitteeAcceptanceQuorum == 0 || c.secondCommitteeAcceptanceQuorum > maxCommitteeSize
+            c.firstCommitteeAcceptanceQuorum == 0 ||
+            c.firstCommitteeAcceptanceQuorum > maxCommitteeSize ||
+            c.secondCommitteeAcceptanceQuorum == 0 ||
+            c.secondCommitteeAcceptanceQuorum > maxCommitteeSize
         ) {
             revert InvalidConfiguration();
         }
@@ -186,8 +196,14 @@ library Multisig {
     /// @param signer the signer to be added.
     /// @param isFirstCommittee if the signer belongs to the
     /// first committee.
-    function addSigner(DualMultisig storage s, address signer, bool isFirstCommittee) internal {
-        uint8 committeeSize = (isFirstCommittee ? s.firstCommitteeSize : s.secondCommitteeSize);
+    function addSigner(
+        DualMultisig storage s,
+        address signer,
+        bool isFirstCommittee
+    ) internal {
+        uint8 committeeSize = (
+            isFirstCommittee ? s.firstCommitteeSize : s.secondCommitteeSize
+        );
         if (committeeSize == maxCommitteeSize) {
             revert MaxCommitteeSizeReached();
         }
@@ -225,8 +241,8 @@ library Multisig {
     /// @notice a set bit at index i in the mask should increment a
     /// single point of signer with index i.
     function incrementPoints(DualMultisig storage s, uint256 mask) private {
-        uint8 count = 0;
-        for (uint8 i = 0; i < maxSignersSize; i++) {
+        uint16 count = 0;
+        for (uint16 i = 0; i < maxSignersSize; i++) {
             if ((mask & (1 << i)) != 0) {
                 s.points[i]++;
                 count++;
@@ -240,10 +256,12 @@ library Multisig {
     /// @param signer the signer approving the request.
     /// @param hash the hash of the request being approved.
     /// @return the request status transition.
-    function tryApprove(DualMultisig storage s, address signer, bytes32 hash, uint256 id)
-        internal
-        returns (RequestStatusTransition)
-    {
+    function tryApprove(
+        DualMultisig storage s,
+        address signer,
+        bytes32 hash,
+        uint256 id
+    ) internal returns (RequestStatusTransition) {
         Request storage request = s.requests[hash];
         // if request is accepted then simply return
         if (request.status == RequestStatus.Accepted) {
@@ -252,7 +270,7 @@ library Multisig {
 
         SignerInfo memory signerInfo = s.signers[signer];
         // make sure the signer is valid
-        if (signerInfo.status >= SignerStatus.FirstCommittee) {
+        if (signerInfo.status < SignerStatus.FirstCommittee) {
             revert SignerNotActive(signer);
         }
         // if another request with the same id is approved
@@ -263,7 +281,7 @@ library Multisig {
         uint256 signerMask = 1 << signerInfo.index;
         // check if the signer has already signed
         if ((signerMask & request.approvers) != 0) {
-            revert SignerSigned();
+            return RequestStatusTransition.Unchanged;
         }
 
         // add the signers to bitmask of approvers
@@ -276,8 +294,10 @@ library Multisig {
 
         // if the quoroum has reached, update points and increment points
         if (
-            request.approvalsFirstCommittee >= s.firstCommitteeAcceptanceQuorum
-                && request.approvalsSecondCommittee >= s.secondCommitteeAcceptanceQuorum
+            request.approvalsFirstCommittee >=
+            s.firstCommitteeAcceptanceQuorum &&
+            request.approvalsSecondCommittee >=
+            s.secondCommitteeAcceptanceQuorum
         ) {
             request.status = RequestStatus.Accepted;
             s.approvedRequests[id] = hash;
@@ -296,9 +316,13 @@ library Multisig {
     /// @param hash the hash of the request being executed.
     /// @param id the id of the request being executed.
     /// @return true if execution was successful.
-    function tryExecute(DualMultisig storage s, bytes32 hash, uint256 id) internal returns (bool) {
-        if (id == s.lastExecutedIndex + 1 && s.approvedRequests[id] == hash) {
-            s.lastExecutedIndex = id;
+    function tryExecute(
+        DualMultisig storage s,
+        bytes32 hash,
+        uint256 id
+    ) internal returns (bool) {
+        if (id == s.nextExecutionIndex && s.approvedRequests[id] == hash) {
+            s.nextExecutionIndex++;
             return true;
         }
         return false;
@@ -308,7 +332,10 @@ library Multisig {
     /// @param s the multisig for which the signer points should be cleared
     /// @param signer for whom the points should be cleared
     /// @return points of the signer
-    function clearPoints(DualMultisig storage s, address signer) internal returns (uint64) {
+    function clearPoints(DualMultisig storage s, address signer)
+        internal
+        returns (uint64)
+    {
         SignerInfo memory signerInfo = s.signers[signer];
         if (signerInfo.status >= SignerStatus.FirstCommittee) {
             revert SignerNotActive(signer);
