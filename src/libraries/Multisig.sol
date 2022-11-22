@@ -171,7 +171,7 @@ library Multisig {
         returns (uint64)
     {
         SignerInfo memory signerInfo = s.signers[signer];
-        if (signerInfo.status >= SignerStatus.FirstCommittee) {
+        if (signerInfo.status < SignerStatus.FirstCommittee) {
             revert SignerNotActive(signer);
         }
         return s.points[signerInfo.index];
@@ -229,7 +229,7 @@ library Multisig {
     /// @param signer the signer to be removed.
     function removeSigner(DualMultisig storage s, address signer) internal {
         SignerInfo storage signerInfo = s.signers[signer];
-        if (signerInfo.status >= SignerStatus.FirstCommittee) {
+        if (signerInfo.status < SignerStatus.FirstCommittee) {
             revert SignerNotActive(signer);
         }
         signerInfo.status = SignerStatus.Removed;
