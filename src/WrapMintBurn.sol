@@ -47,16 +47,34 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
             accumalatedProtocolFees[token];
     }
 
+    function depositFees(uint256 amount)
+        internal
+        view
+        override
+        returns (uint256 fee)
+    {
+        fee = calculateFee(amount, protocolFeeBPS);
+    }
+
     function onDeposit(address token, uint256 amount)
         internal
         override
         returns (uint256 fee)
     {
-        fee = calculateFee(amount, protocolFeeBPS);
+        fee = depositFees(amount);
         accumalatedProtocolFees[token] += fee;
 
         IERC20MintBurn(token).burnFrom(msg.sender, amount - fee);
         IERC20MintBurn(token).transferFrom(msg.sender, address(this), fee);
+    }
+
+    function executeFees(uint256 amount)
+        internal
+        view
+        override
+        returns (uint256 fee)
+    {
+        fee = calculateFee(amount, validatorsFeeBPS + protocolFeeBPS);
     }
 
     function onExecute(

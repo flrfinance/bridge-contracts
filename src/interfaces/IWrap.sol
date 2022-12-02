@@ -78,6 +78,21 @@ interface IWrap is IAccessControlEnumerable {
         uint256 minAmount;
     }
 
+    /// @dev Token info.
+    /// @param maxAmount maximum amount allowed to deposit/approve.
+    /// @param minAmount minimum amount allowed to approve.
+    /// @param minAmountWithFees minimum amount allowed to deposit.
+    /// @notice set max amount to 0 to disable the token.
+    /// @notice minAmountWithFees is minAmount + depositFees(for minAmount).
+    /// On deposit the amount should be greater than minAmountWithFees such that
+    /// after fee deduction on depoit the amount is still greater equal than
+    /// minAmount.
+    struct TokenInfoWithFees {
+        uint256 maxAmount;
+        uint256 minAmount;
+        uint256 minAmountWithFees;
+    }
+
     /// @dev Request info.
     /// @param id id associated to the request.
     /// @param token token requested.

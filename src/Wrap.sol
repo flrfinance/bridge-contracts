@@ -20,7 +20,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     bool public paused;
 
     /// @dev Map tokenAddress to tokenInfo
-    mapping(address => TokenInfo) public tokenInfos;
+    mapping(address => TokenInfoWithFees) public tokenInfos;
 
     /// @dev Map mirrorToken to token
     mapping(address => address) public mirrorTokens;
@@ -46,11 +46,23 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         virtual
         returns (uint256 fee);
 
+    function depositFees(uint256 amount)
+        internal
+        view
+        virtual
+        returns (uint256 fee);
+
     function onExecute(
         address token,
         uint256 amount,
         address to
     ) internal virtual returns (uint256 fee);
+
+    function executeFees(uint256 amount)
+        internal
+        view
+        virtual
+        returns (uint256 fee);
 
     /// @dev Modifier to make a function callable only when the contract is not paused.
     modifier isNotPaused() {
@@ -62,8 +74,12 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
 
     /// @dev Modifier to make a function callable only when the token and amount is correct.
     modifier isValidTokenAmount(address token, uint256 amount) {
-        TokenInfo memory t = tokenInfos[token];
-        if (t.maxAmount <= amount || t.minAmount > amount) {
+        TokenInfoWithFees memory t = tokenInfos[token];
+        // notice that amount should be greater than minAmountWithFees
+        // this is required as amount after the fees should be greater
+        // than minAmount so that when this is approved it passes the
+        // isValidMirrorTokenAmount check.
+        if (t.maxAmount <= amount || t.minAmountWithFees > amount) {
             revert InvalidTokenAmount();
         }
         _;
@@ -71,7 +87,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
 
     /// @dev Modifier to make a function callable only when the token and amount is correct.
     modifier isValidMirrorTokenAmount(address mirrorToken, uint256 amount) {
-        TokenInfo memory t = tokenInfos[mirrorTokens[mirrorToken]];
+        TokenInfoWithFees memory t = tokenInfos[mirrorTokens[mirrorToken]];
         if (t.maxAmount <= amount || t.minAmount > amount) {
             revert InvalidTokenAmount();
         }
@@ -170,7 +186,13 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         if (tokenInfo.minAmount == 0 || tokenInfos[token].minAmount == 0) {
             revert InvalidTokenConfig();
         }
-        tokenInfos[token] = tokenInfo;
+
+        TokenInfoWithFees memory tokenInfoWithFees = TokenInfoWithFees(
+            tokenInfo.maxAmount,
+            tokenInfo.minAmount,
+            tokenInfo.minAmount + depositFees(tokenInfo.minAmount)
+        );
+        tokenInfos[token] = tokenInfoWithFees;
     }
 
     /// @dev internal function to add new token.
@@ -182,7 +204,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         address mirrorToken,
         TokenInfo calldata tokenInfo
     ) internal {
-        TokenInfo memory ti = tokenInfos[token];
+        TokenInfoWithFees memory ti = tokenInfos[token];
         if (
             tokenInfo.minAmount == 0 ||
             ti.minAmount != 0 ||
@@ -190,8 +212,14 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         ) {
             revert InvalidTokenConfig();
         }
+
+        TokenInfoWithFees memory tokenInfoWithFees = TokenInfoWithFees(
+            tokenInfo.maxAmount,
+            tokenInfo.minAmount,
+            tokenInfo.minAmount + depositFees(tokenInfo.minAmount)
+        );
         tokens.push(token);
-        tokenInfos[token] = tokenInfo;
+        tokenInfos[token] = tokenInfoWithFees;
         mirrorTokens[mirrorToken] = token;
     }
 

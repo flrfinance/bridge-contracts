@@ -36,13 +36,26 @@ contract WrapDepositRedeem is IWrapDepositRedeem, Wrap {
         return IERC20(token).balanceOf(address(this));
     }
 
+    function depositFees(uint256) internal pure override returns (uint256 fee) {
+        return 0;
+    }
+
     function onDeposit(address token, uint256 amount)
         internal
         override
         returns (uint256)
     {
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
-        return 0;
+        return depositFees(amount);
+    }
+
+    function executeFees(uint256 amount)
+        internal
+        view
+        override
+        returns (uint256 fee)
+    {
+        fee = calculateFee(amount, validatorsFeeBPS);
     }
 
     function onExecute(
@@ -50,7 +63,7 @@ contract WrapDepositRedeem is IWrapDepositRedeem, Wrap {
         uint256 amount,
         address to
     ) internal override returns (uint256 fee) {
-        fee = calculateFee(amount, validatorsFeeBPS);
+        fee = executeFees(amount);
         IERC20(token).safeTransfer(to, amount);
     }
 
