@@ -337,7 +337,7 @@ library Multisig {
         returns (uint64)
     {
         SignerInfo memory signerInfo = s.signers[signer];
-        if (signerInfo.status >= SignerStatus.FirstCommittee) {
+        if (signerInfo.status < SignerStatus.FirstCommittee) {
             revert SignerNotActive(signer);
         }
         uint8 index = signerInfo.index;
