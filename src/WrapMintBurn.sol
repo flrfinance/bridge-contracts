@@ -17,7 +17,7 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
     using SafeERC20 for IERC20MintBurn;
 
     /// @dev max protocol/validator fee that can be set by the owner
-    uint16 constant maxFeeBPS = 500;
+    uint16 constant maxFeeBPS = 500; // should be less than 10,000
 
     /// @dev mapping to keep track of protocol fees accumalated per token
     mapping(address => uint256) public accumalatedProtocolFees;

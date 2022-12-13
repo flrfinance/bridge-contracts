@@ -16,7 +16,7 @@ contract WrapDepositRedeem is IWrapDepositRedeem, Wrap {
     using SafeERC20 for IERC20;
 
     /// @dev max protocol/validator fee that can be set by the owner
-    uint16 constant maxFeeBPS = 500;
+    uint16 constant maxFeeBPS = 500; // should be less than 10,000
 
     /// @dev validator fees basis points token on mint
     uint16 public validatorsFeeBPS;
@@ -42,6 +42,7 @@ contract WrapDepositRedeem is IWrapDepositRedeem, Wrap {
 
     function onDeposit(address token, uint256 amount)
         internal
+        virtual
         override
         returns (uint256)
     {
@@ -62,9 +63,9 @@ contract WrapDepositRedeem is IWrapDepositRedeem, Wrap {
         address token,
         uint256 amount,
         address to
-    ) internal override returns (uint256 fee) {
+    ) internal virtual override returns (uint256 fee) {
         fee = executeFees(amount);
-        IERC20(token).safeTransfer(to, amount);
+        IERC20(token).safeTransfer(to, amount - fee);
     }
 
     /// @inheritdoc IWrapDepositRedeem

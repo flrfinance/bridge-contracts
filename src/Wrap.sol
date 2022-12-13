@@ -162,7 +162,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         if (multisig.tryExecute(hash, id)) {
             address token = mirrorTokens[mirrorToken];
             uint256 fee = onExecute(token, amount, to);
-            emit Executed(id, token, amount, to, fee);
+            emit Executed(id, token, amount - fee, to, fee);
         }
     }
 
