@@ -82,7 +82,7 @@ jobs:
       - name: Run Forge test coverage
         run: |
           forge coverage --report lcov
-          lcov --rc lcov_branch_coverage=1 --remove lcov.info -o lcov.info test/**/* src/libraries/* src/test/* script/**/*
+          lcov --rc lcov_branch_coverage=1 --remove lcov.info -o lcov.info test/**/* src/libraries/* src/test/* script/*
         id: forge-coverage
 
       - name: Enforce coverage
