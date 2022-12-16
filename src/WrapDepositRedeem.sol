@@ -90,8 +90,8 @@ contract WrapDepositRedeem is IWrapDepositRedeem, Wrap {
 
     /// @inheritdoc IWrapDepositRedeem
     function claimValidatorFees() public {
-        uint64 points = multisig.clearPoints(msg.sender);
         uint64 totalPoints = multisig.totalPoints;
+        uint64 points = multisig.clearPoints(msg.sender);
         for (uint256 i = 0; i < tokens.length; i++) {
             address token = tokens[i];
             uint256 tokenValidatorFee = (accumalatedValidatorsFees(token) *
