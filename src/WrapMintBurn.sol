@@ -74,7 +74,12 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
         override
         returns (uint256 fee)
     {
-        fee = calculateFee(amount, validatorsFeeBPS + protocolFeeBPS);
+        // notive that calculateFee(amount, validatorsFeeBPS) + calculateFee(amount, protocolFeeBPS)
+        // is not the same as calculateFee(amount, validatorsFeeBPS + protocolFeeBPS) because of
+        // rounding errors that can caused because of integer division
+        fee =
+            calculateFee(amount, validatorsFeeBPS) +
+            calculateFee(amount, protocolFeeBPS);
     }
 
     function onExecute(
