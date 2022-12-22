@@ -39,7 +39,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     address[] tokens;
 
     /// @dev dual multisig to manage validators,
-    /// attestations and request quoroum.
+    /// attestations and request quorum.
     Multisig.DualMultisig internal multisig;
 
     /// @dev the number of deposits.
@@ -71,7 +71,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         address to
     ) internal virtual returns (uint256 fee);
 
-    function accumalatedValidatorFees(address token)
+    function accumulatedValidatorFees(address token)
         public
         view
         virtual
@@ -299,7 +299,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         uint64 points = multisig.clearPoints(validator);
         for (uint256 i = 0; i < tokens.length; i++) {
             address token = tokens[i];
-            uint256 tokenValidatorFee = (accumalatedValidatorFees(token) *
+            uint256 tokenValidatorFee = (accumulatedValidatorFees(token) *
                 points) / totalPoints;
             IERC20(token).safeTransfer(validator, tokenValidatorFee);
         }

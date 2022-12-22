@@ -122,10 +122,10 @@ interface IWrap is IAccessControlEnumerable {
     /// @dev Get the validators fee basis points
     function validatorsFeeBPS() external view returns (uint16);
 
-    /// @dev Get the total validators fees accumalated for a given token
+    /// @dev Get the total validators fees accumulated for a given token
     /// @param token token address to get the fees.
     /// @return balance validator fees balance for the token
-    function accumalatedValidatorFees(address token)
+    function accumulatedValidatorFees(address token)
         external
         view
         returns (uint256 balance);
@@ -196,7 +196,7 @@ interface IWrap is IAccessControlEnumerable {
     /// @notice the fees accumulated by the validator is distributed before being removed.
     function removeValidator(address validator) external;
 
-    /// @dev Allows the validator to claim fees accumalated
+    /// @dev Allows the validator to claim fees accumulated
     /// @notice can only be called by a validator
     function claimValidatorFees() external;
 }

@@ -6,10 +6,10 @@ import { IWrap } from "./IWrap.sol";
 /// @title interface for Mint and Burn side of
 /// of the Wraps contract
 interface IWrapMintBurn is IWrap {
-    /// @dev Get the protocol fees accumalated for a given token
+    /// @dev Get the protocol fees accumulated for a given token
     /// @param token token address to get the fees.
     /// @return balance protocol fees balance for the token
-    function accumalatedProtocolFees(address token)
+    function accumulatedProtocolFees(address token)
         external
         view
         returns (uint256 balance);

@@ -91,7 +91,7 @@ abstract BridgeCommon is AccessControl
     pause() only owner
 .
 BridgeEVM is BridgeCommon
-    accumalatedValidatorFees(token):
+    accumulatedValidatorFees(token):
         return balanceOf token
     validatorFees({token, amount, to}):
         return fix percent of amount
@@ -101,7 +101,7 @@ BridgeEVM is BridgeCommon
         t = multisig.totalPoints()
         multisig.clearPoints(address)
         for c of whitelisted tokens
-            transfer (accumalatedValidatorFees(c) * p / t) tokens of c
+            transfer (accumulatedValidatorFees(c) * p / t) tokens of c
     ---
     private onDeposit(id, {token, amount, to}):
         transfer user tokens from user to custodian
@@ -110,9 +110,9 @@ BridgeEVM is BridgeCommon
         emit redeem(id, token, amount - vFee, to, vFee);
 .
 BridgeFLR is BridgeCommon
-    accumalatedProtocolFees
-    accumalatedValidatorFees(token):
-        return balanceOf token - accumalatedProtocolFees[token] 
+    accumulatedProtocolFees
+    accumulatedValidatorFees(token):
+        return balanceOf token - accumulatedProtocolFees[token] 
     protocolFees({token, amount, to}):
         return fix percent of amount
     validatorFees({token, amount, to}):
@@ -123,16 +123,16 @@ BridgeFLR is BridgeCommon
         t = multisig.totalPoints()
         multisig.clearPoints(address)
         for c of whitelisted tokens
-            transfer (accumalatedValidatorFees(c) * p / t) tokens of c
+            transfer (accumulatedValidatorFees(c) * p / t) tokens of c
     claimProtocolFees(token):
         address is owner
-        pfee = accumalatedProtocolFees[token]
-        accumalatedProtocolFees[token] -= pfee
+        pfee = accumulatedProtocolFees[token]
+        accumulatedProtocolFees[token] -= pfee
         transfer pfee amount of tokens to address
     ---
     private onDeposit(id, {token, amount, to}):
         pFee = protocolFees({token, amount, to})
-        accumalatedProtocolFees[token] += pFee
+        accumulatedProtocolFees[token] += pFee
         transfer pFee user tokens to this contracts
         burn amount - pFee user tokens
         return amount - pFee
@@ -140,5 +140,5 @@ BridgeFLR is BridgeCommon
         mint amount tokens
         pFee = protocolFees({token, amount, to})
         vFee = protocolFees({token, amount, to})
-        accumalatedProtocolFees[token] += pFee
+        accumulatedProtocolFees[token] += pFee
         transfer amount - pFee - vFee tokens to the user

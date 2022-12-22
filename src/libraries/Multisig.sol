@@ -3,13 +3,13 @@ pragma solidity ^0.8.15;
 
 /// @title Two Committee Multisig Library
 /// @dev Implements a multisig with two committees.
-/// A quoroum must be reached in both the
+/// A quorum must be reached in both the
 /// committees to approve the request. If either of
 /// the committees reject a request, the request is
 /// rejected. Each committee size is cannot grow
-/// more that 128 members. For every quoroum the
+/// more that 128 members. For every quorum the
 /// signer that attested in favour of it is rewarded
-/// a point. The intention is to use the accumalated
+/// a point. The intention is to use the accumulated
 /// points of a signer to appropriately reward it
 /// for its good deeds.
 library Multisig {
@@ -53,7 +53,7 @@ library Multisig {
     /// @dev Request statuses.
     enum RequestStatus {
         NULL, // request which doesn't exist
-        Undecided, // request hasn't reached a quoroum
+        Undecided, // request hasn't reached a quorum
         Accepted // request approved
     }
 
@@ -100,15 +100,15 @@ library Multisig {
 
     /// @dev DualMultisig
     /// @param firstCommitteeAcceptanceQuorum number of acceptance
-    /// required to reach acceptance quoroum in the first committee.
+    /// required to reach acceptance quorum in the first committee.
     /// @param secondCommitteeAcceptanceQuorum number of acceptance
-    /// required to reach acceptance quoroum in the second committee.
+    /// required to reach acceptance quorum in the second committee.
     /// @param firstCommitteeSize size of the first committee.
     /// @param secondCommitteeSize size of the second committee.
-    /// @param totalPoints total points accumalated among all the signers
+    /// @param totalPoints total points accumulated among all the signers
     /// @param nextExecutionIndex index of the request that will be executed next
     /// @param points an array of points where element i is the points
-    /// accumalated by signer with index i.
+    /// accumulated by signer with index i.
     /// @param signers map signer address to signer info.
     /// @param requests maps request hash to request info.
     /// @param approvedRequests approved request for an id
@@ -127,9 +127,9 @@ library Multisig {
     }
 
     /// @param firstCommitteeAcceptanceQuorum number of acceptance
-    /// required to reach acceptance quoroum in the first committee.
+    /// required to reach acceptance quorum in the first committee.
     /// @param secondCommitteeAcceptanceQuorum number of acceptance
-    /// required to reach acceptance quoroum in the second committee.
+    /// required to reach acceptance quorum in the second committee.
     /// @notice all of the config members should be > 0 and <=
     /// maxCommitteeSize
     struct Config {
@@ -161,7 +161,7 @@ library Multisig {
         return s.signers[signer].status >= SignerStatus.FirstCommittee;
     }
 
-    /// @dev Returns a points accumalated by a signer
+    /// @dev Returns a points accumulated by a signer
     /// @param s the multisig to check the points
     /// @param signer the address of the signer
     /// @return the points accumalted by the signer
@@ -292,7 +292,7 @@ library Multisig {
             ++request.approvalsSecondCommittee;
         }
 
-        // if the quoroum has reached, update points and increment points
+        // if the quorum has reached, update points and increment points
         if (
             request.approvalsFirstCommittee >=
             s.firstCommitteeAcceptanceQuorum &&
@@ -328,7 +328,7 @@ library Multisig {
         return false;
     }
 
-    /// @dev Clears the points accumalated by a signer.
+    /// @dev Clears the points accumulated by a signer.
     /// @param s the multisig for which the signer points should be cleared
     /// @param signer for whom the points should be cleared
     /// @return points of the signer

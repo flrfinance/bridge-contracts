@@ -21,7 +21,7 @@ contract WrapDepositRedeem is IWrapDepositRedeem, Wrap {
     {}
 
     /// @inheritdoc IWrap
-    function accumalatedValidatorFees(address token)
+    function accumulatedValidatorFees(address token)
         public
         view
         override(IWrap, Wrap)

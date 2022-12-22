@@ -17,8 +17,8 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
 
     using SafeERC20 for IERC20MintBurn;
 
-    /// @dev mapping to keep track of protocol fees accumalated per token
-    mapping(address => uint256) public accumalatedProtocolFees;
+    /// @dev mapping to keep track of protocol fees accumulated per token
+    mapping(address => uint256) public accumulatedProtocolFees;
 
     /// @dev protocol fees basis point taken on mint and burn
     uint16 public protocolFeeBPS;
@@ -32,7 +32,7 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
     }
 
     /// @inheritdoc IWrap
-    function accumalatedValidatorFees(address token)
+    function accumulatedValidatorFees(address token)
         public
         view
         override(IWrap, Wrap)
@@ -40,7 +40,7 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
     {
         return
             IERC20MintBurn(token).balanceOf(address(this)) -
-            accumalatedProtocolFees[token];
+            accumulatedProtocolFees[token];
     }
 
     function depositFees(uint256 amount)
@@ -58,7 +58,7 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
         returns (uint256 fee)
     {
         fee = depositFees(amount);
-        accumalatedProtocolFees[token] += fee;
+        accumulatedProtocolFees[token] += fee;
 
         IERC20MintBurn(token).burnFrom(msg.sender, amount - fee);
         IERC20MintBurn(token).transferFrom(msg.sender, address(this), fee);
@@ -70,7 +70,7 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
         address to
     ) internal override returns (uint256 fee) {
         uint256 protocolFee = calculateFee(amount, protocolFeeBPS);
-        accumalatedProtocolFees[token] += protocolFee;
+        accumulatedProtocolFees[token] += protocolFee;
         fee = protocolFee + calculateFee(amount, validatorsFeeBPS);
 
         IERC20MintBurn(token).mint(to, amount - fee);
@@ -116,8 +116,8 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
         public
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
-        uint256 protocolFee = accumalatedProtocolFees[token];
-        accumalatedProtocolFees[token] = 0;
+        uint256 protocolFee = accumulatedProtocolFees[token];
+        accumulatedProtocolFees[token] = 0;
         IERC20MintBurn(token).safeTransfer(msg.sender, protocolFee);
     }
 }
