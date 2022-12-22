@@ -20,6 +20,8 @@ interface IWrapMintBurn is IWrap {
     /// @dev Configure protocol fees.
     /// @param protocolFeeBPS protocol fees in basis points.
     /// @notice this function can only be called by the owner.
+    /// @notice this function should update the minAmountWithFees
+    /// for all the tokens.
     function configureProtocolFees(uint16 protocolFeeBPS) external;
 
     /// @dev Create a wrap token link it to a mirror token.

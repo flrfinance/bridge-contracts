@@ -191,21 +191,38 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         }
     }
 
+    function _configureTokenInfo(
+        address token,
+        uint256 minAmount,
+        uint256 maxAmount,
+        bool newToken
+    ) internal {
+        uint256 currMinAmount = tokenInfos[token].minAmount;
+        if (
+            minAmount == 0 ||
+            (newToken ? currMinAmount != 0 : currMinAmount == 0)
+        ) {
+            revert InvalidTokenConfig();
+        }
+        TokenInfoWithFees memory tokenInfoWithFees = TokenInfoWithFees(
+            maxAmount,
+            minAmount,
+            minAmount + depositFees(minAmount)
+        );
+        tokenInfos[token] = tokenInfoWithFees;
+    }
+
     /// @inheritdoc IWrap
     function configureToken(address token, TokenInfo calldata tokenInfo)
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
-        if (tokenInfo.minAmount == 0 || tokenInfos[token].minAmount == 0) {
-            revert InvalidTokenConfig();
-        }
-
-        TokenInfoWithFees memory tokenInfoWithFees = TokenInfoWithFees(
-            tokenInfo.maxAmount,
+        _configureTokenInfo(
+            token,
             tokenInfo.minAmount,
-            tokenInfo.minAmount + depositFees(tokenInfo.minAmount)
+            tokenInfo.maxAmount,
+            false
         );
-        tokenInfos[token] = tokenInfoWithFees;
     }
 
     /// @inheritdoc IWrap
@@ -228,22 +245,17 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         address mirrorToken,
         TokenInfo calldata tokenInfo
     ) internal {
-        TokenInfoWithFees memory ti = tokenInfos[token];
-        if (
-            tokenInfo.minAmount == 0 ||
-            ti.minAmount != 0 ||
-            mirrorTokens[mirrorToken] != address(0)
-        ) {
+        if (mirrorTokens[mirrorToken] != address(0)) {
             revert InvalidTokenConfig();
         }
 
-        TokenInfoWithFees memory tokenInfoWithFees = TokenInfoWithFees(
-            tokenInfo.maxAmount,
+        _configureTokenInfo(
+            token,
             tokenInfo.minAmount,
-            tokenInfo.minAmount + depositFees(tokenInfo.minAmount)
+            tokenInfo.maxAmount,
+            true
         );
         tokens.push(token);
-        tokenInfos[token] = tokenInfoWithFees;
         mirrorTokens[mirrorToken] = token;
     }
 

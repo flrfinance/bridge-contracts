@@ -86,6 +86,16 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
             revert FeeExceedsMaxFee();
         }
         protocolFeeBPS = _protocolFeeBPS;
+        for (uint256 i = 0; i < tokens.length; i++) {
+            address token = tokens[i];
+            TokenInfoWithFees memory tokenInfo = tokenInfos[token];
+            _configureTokenInfo(
+                token,
+                tokenInfo.minAmount,
+                tokenInfo.maxAmount,
+                false
+            );
+        }
     }
 
     function createAddToken(
