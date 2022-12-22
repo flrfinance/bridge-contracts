@@ -278,18 +278,23 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
+        _claimValidatorFees(signer);
         multisig.removeSigner(signer);
     }
 
-    /// @inheritdoc IWrap
-    function claimValidatorFees() public {
+    function _claimValidatorFees(address validator) internal {
         uint64 totalPoints = multisig.totalPoints;
-        uint64 points = multisig.clearPoints(msg.sender);
+        uint64 points = multisig.clearPoints(validator);
         for (uint256 i = 0; i < tokens.length; i++) {
             address token = tokens[i];
             uint256 tokenValidatorFee = (accumalatedValidatorFees(token) *
                 points) / totalPoints;
-            IERC20(token).safeTransfer(msg.sender, tokenValidatorFee);
+            IERC20(token).safeTransfer(validator, tokenValidatorFee);
         }
+    }
+
+    /// @inheritdoc IWrap
+    function claimValidatorFees() public {
+        _claimValidatorFees(msg.sender);
     }
 }

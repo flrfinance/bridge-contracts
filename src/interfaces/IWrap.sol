@@ -190,6 +190,7 @@ interface IWrap is IAccessControlEnumerable {
     /// @dev remove signer from the contract.
     /// @param signer address of the signer.
     /// @notice this function should be only called by the owner of the contract.
+    /// @notice the fees accumulated by the signer is distributed before being removed.
     function removeSigner(address signer) external;
 
     /// @dev Allows the validator to claim fees accumalated
