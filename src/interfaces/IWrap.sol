@@ -29,6 +29,9 @@ interface IWrap is IAccessControlEnumerable {
     /// @dev Thrown when the id is not same as the approveIndex
     error InvalidId();
 
+    /// @dev Thrown when the to address is address(0)
+    error InvalidToAddress();
+
     /// @dev Emitted when a user deposits
     /// @param id id associated to the request.
     /// @param token token deposited.

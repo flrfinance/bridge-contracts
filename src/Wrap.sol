@@ -133,11 +133,11 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         isValidTokenAmount(token, amount)
         returns (uint256 id)
     {
-        address _to = to == address(0) ? msg.sender : to;
+        if (to == address(0)) revert InvalidToAddress();
         id = depositIndex;
         depositIndex++;
         uint256 fee = onDeposit(token, amount);
-        emit Deposit(id, token, amount - fee, _to, fee);
+        emit Deposit(id, token, amount - fee, to, fee);
     }
 
     /// @dev internal function to calculate the hash of the request.
