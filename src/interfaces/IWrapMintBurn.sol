@@ -17,7 +17,7 @@ interface IWrapMintBurn is IWrap {
     /// @dev Get the total validators fees accumalated for a given token
     /// @param token token address to get the fees.
     /// @return balance validator fees balance for the token
-    function accumalatedValidatorsFees(address token)
+    function accumalatedValidatorFees(address token)
         external
         view
         returns (uint256 balance);

@@ -37,7 +37,7 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
     }
 
     /// @inheritdoc IWrapMintBurn
-    function accumalatedValidatorsFees(address token)
+    function accumalatedValidatorFees(address token)
         public
         view
         returns (uint256)
@@ -113,7 +113,6 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
             new WrapToken(tokenName, tokenSymbol, mirrorTokenDecimals)
         );
         _addToken(token, mirrorToken, tokenInfo);
-        return token;
     }
 
     /// @inheritdoc IWrapMintBurn
@@ -122,7 +121,7 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
         uint64 points = multisig.clearPoints(msg.sender);
         for (uint256 i = 0; i < tokens.length; i++) {
             address token = tokens[i];
-            uint256 tokenValidatorFee = (accumalatedValidatorsFees(token) *
+            uint256 tokenValidatorFee = (accumalatedValidatorFees(token) *
                 points) / totalPoints;
             IERC20MintBurn(token).safeTransfer(msg.sender, tokenValidatorFee);
         }
