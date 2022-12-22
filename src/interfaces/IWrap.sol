@@ -181,17 +181,17 @@ interface IWrap is IAccessControlEnumerable {
     /// with pause role but can be unpaused only by the admin
     function unpause() external;
 
-    /// @dev add signer to the contract.
-    /// @param signer address of the signer.
-    /// @param isFirstCommittee true if the signer is from first committee.
+    /// @dev add validator to the contract.
+    /// @param validator address of the validator.
+    /// @param isFirstCommittee true if the validator is from first committee.
     /// @notice this function should be only called by the owner of the contract.
-    function addSigner(address signer, bool isFirstCommittee) external;
+    function addValidator(address validator, bool isFirstCommittee) external;
 
-    /// @dev remove signer from the contract.
-    /// @param signer address of the signer.
+    /// @dev remove validator from the contract.
+    /// @param validator address of the validator.
     /// @notice this function should be only called by the owner of the contract.
-    /// @notice the fees accumulated by the signer is distributed before being removed.
-    function removeSigner(address signer) external;
+    /// @notice the fees accumulated by the validator is distributed before being removed.
+    function removeValidator(address validator) external;
 
     /// @dev Allows the validator to claim fees accumalated
     /// @notice can only be called by a validator

@@ -44,10 +44,10 @@ contract TestSetup is Script {
             "TEST"
         );
 
-        wrapDepositRedeem.addSigner(validator1, true);
-        wrapDepositRedeem.addSigner(validator2, false);
-        wrapMintBurn.addSigner(validator1, true);
-        wrapMintBurn.addSigner(validator2, false);
+        wrapDepositRedeem.addValidator(validator1, true);
+        wrapDepositRedeem.addValidator(validator2, false);
+        wrapMintBurn.addValidator(validator1, true);
+        wrapMintBurn.addValidator(validator2, false);
 
         address wrapToken = wrapMintBurn.createAddToken(
             "TestWrap",

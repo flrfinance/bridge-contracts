@@ -38,7 +38,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     /// @notice a token in the list might not be active
     address[] tokens;
 
-    /// @dev dual multisig to manage signers,
+    /// @dev dual multisig to manage validators,
     /// attestations and request quoroum.
     Multisig.DualMultisig internal multisig;
 
@@ -266,20 +266,20 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     }
 
     /// @inheritdoc IWrap
-    function addSigner(address signer, bool isFirstCommittee)
+    function addValidator(address validator, bool isFirstCommittee)
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
-        multisig.addSigner(signer, isFirstCommittee);
+        multisig.addSigner(validator, isFirstCommittee);
     }
 
     /// @inheritdoc IWrap
-    function removeSigner(address signer)
+    function removeValidator(address validator)
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
-        _claimValidatorFees(signer);
-        multisig.removeSigner(signer);
+        _claimValidatorFees(validator);
+        multisig.removeSigner(validator);
     }
 
     function _claimValidatorFees(address validator) internal {
