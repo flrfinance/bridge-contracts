@@ -36,6 +36,6 @@ contract WrapDepositRedeemCustodian is WrapDepositRedeem {
         uint256 amount,
         address
     ) internal view override returns (uint256 fee) {
-        fee = executeFees(amount);
+        fee = calculateFee(amount, validatorsFeeBPS);
     }
 }

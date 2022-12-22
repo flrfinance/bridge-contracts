@@ -116,6 +116,17 @@ interface IWrap is IAccessControlEnumerable {
     /// @dev Returns the index of request that will be executed next
     function nextExecutionIndex() external view returns (uint256);
 
+    /// @dev Get the validators fee basis points
+    function validatorsFeeBPS() external view returns (uint16);
+
+    /// @dev Get the total validators fees accumalated for a given token
+    /// @param token token address to get the fees.
+    /// @return balance validator fees balance for the token
+    function accumalatedValidatorFees(address token)
+        external
+        view
+        returns (uint256 balance);
+
     /// @dev Set to the token configuration.
     /// @param tokenInfo the token token configuration.
     /// @notice set maxAmount to 0 to disable the token.
@@ -127,6 +138,11 @@ interface IWrap is IAccessControlEnumerable {
     /// @param config multisig config.
     /// @notice can be only called by the owner.
     function configureMultisig(Multisig.Config calldata config) external;
+
+    /// @dev Configure validator fees
+    /// @param validatorsFeeBPS validator fees in basis points
+    /// @notice can be only be called by the owner
+    function configureValidatorFees(uint16 validatorsFeeBPS) external;
 
     /// @dev Deposit tokens.
     /// @param token token being deposited.
@@ -175,4 +191,8 @@ interface IWrap is IAccessControlEnumerable {
     /// @param signer address of the signer.
     /// @notice this function should be only called by the owner of the contract.
     function removeSigner(address signer) external;
+
+    /// @dev Allows the validator to claim fees accumalated
+    /// @notice can only be called by a validator
+    function claimValidatorFees() external;
 }

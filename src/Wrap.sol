@@ -4,6 +4,10 @@ pragma solidity ^0.8.13;
 import {
     AccessControlEnumerable
 } from "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
+import {
+    SafeERC20
+} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import { IWrap } from "./interfaces/IWrap.sol";
 import { Multisig } from "./libraries/Multisig.sol";
@@ -11,9 +15,14 @@ import { Multisig } from "./libraries/Multisig.sol";
 abstract contract Wrap is IWrap, AccessControlEnumerable {
     using Multisig for Multisig.DualMultisig;
 
+    using SafeERC20 for IERC20;
+
     /// @dev the role id for addresses that
     /// can pause the contract
     bytes32 public constant PAUSE_ROLE = keccak256("PAUSE");
+
+    /// @dev max protocol/validator fee that can be set by the owner
+    uint16 constant maxFeeBPS = 500; // should be less than 10,000
 
     /// @dev True if the contracts are paused,
     /// false otherwise.
@@ -36,9 +45,13 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     /// @dev the number of deposits.
     uint256 public depositIndex;
 
-    constructor(Multisig.Config memory config) {
+    /// @dev validator fees basis points token on mint
+    uint16 public validatorsFeeBPS;
+
+    constructor(Multisig.Config memory config, uint16 _validatorsFeeBPS) {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         multisig.configure(config);
+        configureValidatorFees(_validatorsFeeBPS);
     }
 
     function onDeposit(address token, uint256 amount)
@@ -58,11 +71,11 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         address to
     ) internal virtual returns (uint256 fee);
 
-    function executeFees(uint256 amount)
-        internal
+    function accumalatedValidatorFees(address token)
+        public
         view
         virtual
-        returns (uint256 fee);
+        returns (uint256 balance);
 
     /// @dev Modifier to make a function callable only when the contract is not paused.
     modifier isNotPaused() {
@@ -195,6 +208,17 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         tokenInfos[token] = tokenInfoWithFees;
     }
 
+    /// @inheritdoc IWrap
+    function configureValidatorFees(uint16 _validatorsFeeBPS)
+        public
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        if (_validatorsFeeBPS > maxFeeBPS) {
+            revert FeeExceedsMaxFee();
+        }
+        validatorsFeeBPS = _validatorsFeeBPS;
+    }
+
     /// @dev internal function to add new token.
     /// @param token token that will be deposited in the contract.
     /// @param mirrorToken token that will be deposited in the mirror contract.
@@ -255,5 +279,17 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
         multisig.removeSigner(signer);
+    }
+
+    /// @inheritdoc IWrap
+    function claimValidatorFees() public {
+        uint64 totalPoints = multisig.totalPoints;
+        uint64 points = multisig.clearPoints(msg.sender);
+        for (uint256 i = 0; i < tokens.length; i++) {
+            address token = tokens[i];
+            uint256 tokenValidatorFee = (accumalatedValidatorFees(token) *
+                points) / totalPoints;
+            IERC20(token).safeTransfer(msg.sender, tokenValidatorFee);
+        }
     }
 }

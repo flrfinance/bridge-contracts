@@ -5,6 +5,7 @@ import {
     SafeERC20
 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+import { IWrap } from "./interfaces/IWrap.sol";
 import { IWrapMintBurn } from "./interfaces/IWrapMintBurn.sol";
 import { IERC20MintBurn } from "./interfaces/IERC20MintBurn.sol";
 import { Multisig } from "./libraries/Multisig.sol";
@@ -16,30 +17,25 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
 
     using SafeERC20 for IERC20MintBurn;
 
-    /// @dev max protocol/validator fee that can be set by the owner
-    uint16 constant maxFeeBPS = 500; // should be less than 10,000
-
     /// @dev mapping to keep track of protocol fees accumalated per token
     mapping(address => uint256) public accumalatedProtocolFees;
 
     /// @dev protocol fees basis point taken on mint and burn
     uint16 public protocolFeeBPS;
 
-    /// @dev validator fees basis points token on mint
-    uint16 public validatorsFeeBPS;
-
     constructor(
         Multisig.Config memory config,
-        uint16 _protocolFeeBPS,
-        uint16 _validatorsFeeBPS
-    ) Wrap(config) {
-        configureFees(_protocolFeeBPS, _validatorsFeeBPS);
+        uint16 _validatorsFeeBPS,
+        uint16 _protocolFeeBPS
+    ) Wrap(config, _validatorsFeeBPS) {
+        configureProtocolFees(_protocolFeeBPS);
     }
 
-    /// @inheritdoc IWrapMintBurn
+    /// @inheritdoc IWrap
     function accumalatedValidatorFees(address token)
         public
         view
+        override(IWrap, Wrap)
         returns (uint256)
     {
         return
@@ -68,20 +64,6 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
         IERC20MintBurn(token).transferFrom(msg.sender, address(this), fee);
     }
 
-    function executeFees(uint256 amount)
-        internal
-        view
-        override
-        returns (uint256 fee)
-    {
-        // notive that calculateFee(amount, validatorsFeeBPS) + calculateFee(amount, protocolFeeBPS)
-        // is not the same as calculateFee(amount, validatorsFeeBPS + protocolFeeBPS) because of
-        // rounding errors that can caused because of integer division
-        fee =
-            calculateFee(amount, validatorsFeeBPS) +
-            calculateFee(amount, protocolFeeBPS);
-    }
-
     function onExecute(
         address token,
         uint256 amount,
@@ -96,15 +78,14 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
     }
 
     /// @inheritdoc IWrapMintBurn
-    function configureFees(uint16 _protocolFeeBPS, uint16 _validatorsFeeBPS)
+    function configureProtocolFees(uint16 _protocolFeeBPS)
         public
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
-        if (_protocolFeeBPS > maxFeeBPS || _validatorsFeeBPS > maxFeeBPS) {
+        if (_protocolFeeBPS > maxFeeBPS) {
             revert FeeExceedsMaxFee();
         }
         protocolFeeBPS = _protocolFeeBPS;
-        validatorsFeeBPS = _validatorsFeeBPS;
     }
 
     function createAddToken(
@@ -118,18 +99,6 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
             new WrapToken(tokenName, tokenSymbol, mirrorTokenDecimals)
         );
         _addToken(token, mirrorToken, tokenInfo);
-    }
-
-    /// @inheritdoc IWrapMintBurn
-    function claimValidatorFees() public {
-        uint64 totalPoints = multisig.totalPoints;
-        uint64 points = multisig.clearPoints(msg.sender);
-        for (uint256 i = 0; i < tokens.length; i++) {
-            address token = tokens[i];
-            uint256 tokenValidatorFee = (accumalatedValidatorFees(token) *
-                points) / totalPoints;
-            IERC20MintBurn(token).safeTransfer(msg.sender, tokenValidatorFee);
-        }
     }
 
     /// @inheritdoc IWrapMintBurn
