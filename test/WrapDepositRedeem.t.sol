@@ -13,8 +13,7 @@ import { Multisig } from "../src/libraries/Multisig.sol";
 import { TestERC20 } from "../src/test/TestERC20.sol";
 
 contract WrapDepositRedeemTest is WrapTest {
-    uint8 constant validatorsFeeBPS = 100;
-    uint8 constant protocolFeeBPS = 0;
+    uint16 constant protocolFeeBPS = 0;
 
     WrapDepositRedeemHarness wdr;
 
@@ -43,34 +42,27 @@ contract WrapDepositRedeemTest is WrapTest {
             secondCommitteeAcceptanceQuorum
         );
 
+        validatorFeeBPS = 100;
+
         vm.prank(admin);
-        wdr = new WrapDepositRedeemHarness(config, validatorsFeeBPS);
+        wdr = new WrapDepositRedeemHarness(config, validatorFeeBPS);
         wrap = WrapHarness(wdr);
     }
 
     function testConstructorValidatorFeeBPS() public {
-        assertEq(wdr.validatorsFeeBPS(), validatorsFeeBPS);
+        assertEq(wrap.validatorsFeeBPS(), validatorFeeBPS);
     }
 
-    function _testAccumulatedValidatorsFees(uint256 validatorsFees) internal {
+    function _testAccumulatedValidatorFees(uint256 validatorFees)
+        internal
+        override
+    {
         vm.mockCall(
             token,
             abi.encodeWithSelector(IERC20.balanceOf.selector),
-            abi.encode(validatorsFees)
+            abi.encode(validatorFees)
         );
-        assertEq(wdr.accumalatedValidatorsFees(token), validatorsFees);
-    }
-
-    function testAccumulatedValidatorsFees() public override {
-        _testAccumulatedValidatorsFees(0);
-        _testAccumulatedValidatorsFees(100);
-        _testAccumulatedValidatorsFees(1337);
-        _testAccumulatedValidatorsFees(31337);
-        _testAccumulatedValidatorsFees(432e20);
-    }
-
-    function testAccumulatedValidatorsFees(uint256 validatorsFees) public {
-        _testAccumulatedValidatorsFees(validatorsFees);
+        assertEq(wdr.accumulatedValidatorFees(token), validatorFees);
     }
 
     function _testOnDeposit(uint256 userInitialBalance, uint256 amountToDeposit)
@@ -96,6 +88,15 @@ contract WrapDepositRedeemTest is WrapTest {
         assertEq(wrap.exposed_depositFees(amount), 0);
     }
 
+    function _onExecuteFee(uint256 amount)
+        internal
+        virtual
+        override
+        returns (uint256)
+    {
+        return wrap.exposed_calculateFee(amount, validatorFeeBPS);
+    }
+
     function _testOnExecute(uint256 amount)
         internal
         override
@@ -103,7 +104,7 @@ contract WrapDepositRedeemTest is WrapTest {
         withMintedTokens(address(wrap), amount)
     {
         uint256 initialRecipientBalance = IERC20(token).balanceOf(user);
-        uint256 fee = wrap.exposed_calculateFee(amount, validatorsFeeBPS);
+        uint256 fee = wrap.exposed_calculateFee(amount, validatorFeeBPS);
         vm.expectEmit(true, true, true, true, token);
         emit Transfer(address(wrap), user, amount - fee);
         assertEq(wrap.exposed_onExecute(token, amount, user), fee);
@@ -111,46 +112,6 @@ contract WrapDepositRedeemTest is WrapTest {
             IERC20(token).balanceOf(user),
             initialRecipientBalance + (amount - fee)
         );
-    }
-
-    function _testExecuteFees(uint256 amount) internal override {
-        assertEq(
-            wrap.exposed_executeFees(amount),
-            wrap.exposed_calculateFee(amount, validatorsFeeBPS)
-        );
-    }
-
-    function testConfigureFees() public {
-        uint16 newValidatorsFeeBPS = validatorsFeeBPS / 2;
-        vm.prank(admin);
-        wdr.configureFees(newValidatorsFeeBPS);
-        assertEq(wdr.validatorsFeeBPS(), newValidatorsFeeBPS);
-    }
-
-    function testConfigureFees(uint16 newValidatorsFeeBPS) public {
-        vm.assume(newValidatorsFeeBPS < wdr.exposed_maxFeeBPS());
-        vm.prank(admin);
-        wdr.configureFees(newValidatorsFeeBPS);
-        assertEq(wdr.validatorsFeeBPS(), newValidatorsFeeBPS);
-    }
-
-    function testConfigureFeesCanBeSetToZero() public {
-        vm.prank(admin);
-        wdr.configureFees(0);
-        assertEq(wdr.validatorsFeeBPS(), 0);
-    }
-
-    function testConfigureFeesRevertsIfFeeExceedsMax() public {
-        uint16 maxFeeBPS = wdr.exposed_maxFeeBPS();
-        vm.prank(admin);
-        vm.expectRevert(IWrap.FeeExceedsMaxFee.selector);
-        wdr.configureFees(maxFeeBPS + 1);
-    }
-
-    function testConfigureFeesRevertsIfCallerIsNotAdmin() public {
-        vm.prank(user);
-        _expectMissingRoleRevert(user, DEFAULT_ADMIN_ROLE);
-        wdr.configureFees(validatorsFeeBPS / 2);
     }
 
     function testAddToken() public {
@@ -183,11 +144,7 @@ contract WrapDepositRedeemTest is WrapTest {
         wdr.addToken(token, mirrorToken, tokenInfo);
     }
 
-    function _claimValidatorFees() internal override {
-        wdr.claimValidatorFees();
-    }
-
-    function _accumulatedValidatorsFees()
+    function _accumulatedValidatorFees()
         internal
         view
         override
@@ -224,9 +181,9 @@ contract WrapDepositRedeemTest is WrapTest {
         uint256 id,
         address token,
         uint256 amount,
-        address recipient
+        address recipient,
+        uint256 fee
     ) internal override {
-        uint256 fee = wrap.exposed_executeFees(amount);
         vm.expectEmit(true, true, true, true, token);
         emit Transfer(address(wrap), recipient, amount - fee);
         vm.expectEmit(true, true, true, true, address(wrap));

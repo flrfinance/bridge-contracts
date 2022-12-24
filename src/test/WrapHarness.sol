@@ -88,14 +88,6 @@ abstract contract WrapHarness is Wrap {
         return onExecute(token, amount, to);
     }
 
-    function exposed_executeFees(uint256 amount)
-        external
-        view
-        returns (uint256 fee)
-    {
-        return executeFees(amount);
-    }
-
     function exposed_calculateFee(uint256 amount, uint16 feeBPS)
         external
         pure
@@ -119,5 +111,9 @@ abstract contract WrapHarness is Wrap {
         TokenInfo calldata tokenInfo
     ) external {
         return _addToken(token, mirrorToken, tokenInfo);
+    }
+
+    function exposed_maxFeeBPS() external pure returns (uint16) {
+        return Wrap.maxFeeBPS;
     }
 }

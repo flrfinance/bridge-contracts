@@ -24,6 +24,7 @@ contract WrapDepositRedeem is IWrapDepositRedeem, Wrap {
     function accumulatedValidatorFees(address token)
         public
         view
+        virtual
         override(IWrap, Wrap)
         returns (uint256)
     {

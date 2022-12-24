@@ -12,7 +12,6 @@ import { Multisig } from "../src/libraries/Multisig.sol";
 
 contract WrapMintBurnTest is WrapTest {
     uint16 constant protocolFeeBPS = 100;
-    uint16 constant validatorsFeeBPS = 100;
 
     WrapMintBurnHarness wmb;
 
@@ -41,8 +40,10 @@ contract WrapMintBurnTest is WrapTest {
             secondCommitteeAcceptanceQuorum
         );
 
+        validatorFeeBPS = 100;
+
         vm.prank(admin);
-        wmb = new WrapMintBurnHarness(config, protocolFeeBPS, validatorsFeeBPS);
+        wmb = new WrapMintBurnHarness(config, protocolFeeBPS, validatorFeeBPS);
         wrap = WrapHarness(wmb);
     }
 
@@ -51,33 +52,24 @@ contract WrapMintBurnTest is WrapTest {
     }
 
     function testConstructorValidatorFeeBPS() public {
-        assertEq(wmb.validatorsFeeBPS(), validatorsFeeBPS);
+        assertEq(wmb.validatorsFeeBPS(), validatorFeeBPS);
     }
 
-    function _testAccumulatedValidatorsFees(uint256 validatorsFees) internal {
+    function _testAccumulatedValidatorFees(uint256 validatorFees)
+        internal
+        override
+    {
         // TODO: Perform some actions to increase protocol fees
-        uint256 accumalatedProtocolFees = wmb.accumalatedProtocolFees(token);
+        uint256 accumulatedProtocolFees = wmb.accumulatedProtocolFees(token);
         vm.mockCall(
             token,
             abi.encodeWithSelector(IERC20.balanceOf.selector),
-            abi.encode(validatorsFees)
+            abi.encode(validatorFees)
         );
         assertEq(
-            wmb.accumalatedValidatorsFees(token),
-            validatorsFees - accumalatedProtocolFees
+            wmb.accumulatedValidatorFees(token),
+            validatorFees - accumulatedProtocolFees
         );
-    }
-
-    function testAccumulatedValidatorsFees() public override {
-        _testAccumulatedValidatorsFees(0);
-        _testAccumulatedValidatorsFees(100);
-        _testAccumulatedValidatorsFees(1337);
-        _testAccumulatedValidatorsFees(31337);
-        _testAccumulatedValidatorsFees(432e20);
-    }
-
-    function testAccumulatedValidatorsFees(uint256 validatorsFees) public {
-        _testAccumulatedValidatorsFees(validatorsFees);
     }
 
     function _testOnDeposit(uint256 userInitialBalance, uint256 amountToDeposit)
@@ -86,7 +78,7 @@ contract WrapMintBurnTest is WrapTest {
         withToken
         withMintedTokens(user, userInitialBalance)
     {
-        uint256 initialAccumulatedProtocolFees = wmb.accumalatedProtocolFees(
+        uint256 initialAccumulatedProtocolFees = wmb.accumulatedProtocolFees(
             token
         );
         uint256 fee = wrap.exposed_depositFees(amountToDeposit);
@@ -99,7 +91,7 @@ contract WrapMintBurnTest is WrapTest {
         assertEq(wrap.exposed_onDeposit(token, amountToDeposit), fee);
         vm.stopPrank();
         assertEq(
-            wmb.accumalatedProtocolFees(token),
+            wmb.accumulatedProtocolFees(token),
             initialAccumulatedProtocolFees + fee
         );
         assertEq(
@@ -116,19 +108,30 @@ contract WrapMintBurnTest is WrapTest {
         );
     }
 
+    function _onExecuteFee(uint256 amount)
+        internal
+        view
+        override
+        returns (uint256)
+    {
+        return
+            wrap.exposed_calculateFee(amount, protocolFeeBPS) +
+            wrap.exposed_calculateFee(amount, validatorFeeBPS);
+    }
+
     function _testOnExecute(uint256 amount)
         internal
         override
         withToken
         withMintedTokens(address(wrap), amount)
     {
-        uint256 initialAccumulatedProtocolFees = wmb.accumalatedProtocolFees(
+        uint256 initialAccumulatedProtocolFees = wmb.accumulatedProtocolFees(
             token
         );
         uint256 initialRecipientBalance = IERC20(token).balanceOf(user);
         uint256 protocolFee = wrap.exposed_calculateFee(amount, protocolFeeBPS);
         uint256 fee = protocolFee +
-            wrap.exposed_calculateFee(amount, validatorsFeeBPS);
+            wrap.exposed_calculateFee(amount, validatorFeeBPS);
 
         vm.expectEmit(true, true, true, true, token);
         emit Transfer(address(0), user, amount - fee);
@@ -136,7 +139,7 @@ contract WrapMintBurnTest is WrapTest {
         emit Transfer(address(0), address(wrap), fee);
         assertEq(wrap.exposed_onExecute(token, amount, user), fee);
         assertEq(
-            wmb.accumalatedProtocolFees(token),
+            wmb.accumulatedProtocolFees(token),
             initialAccumulatedProtocolFees + protocolFee
         );
         assertEq(
@@ -145,43 +148,31 @@ contract WrapMintBurnTest is WrapTest {
         );
     }
 
-    function _testExecuteFees(uint256 amount) internal override {
-        assertEq(
-            wrap.exposed_executeFees(amount),
-            wrap.exposed_calculateFee(amount, validatorsFeeBPS + protocolFeeBPS)
-        );
-    }
-
-    function testConfigureFees() public {
+    function testConfigureProtocolFees() public {
         uint16 newProtocolFeeBPS = protocolFeeBPS / 2;
-        uint16 newValidatorsFeeBPS = validatorsFeeBPS / 2;
         vm.prank(admin);
-        wmb.configureFees(newProtocolFeeBPS, newValidatorsFeeBPS);
+        wmb.configureProtocolFees(newProtocolFeeBPS);
         assertEq(wmb.protocolFeeBPS(), newProtocolFeeBPS);
-        assertEq(wmb.validatorsFeeBPS(), newValidatorsFeeBPS);
     }
 
-    function testConfigureFeesCanBeSetToZero() public {
+    function testConfigureProtocolFeesCanBeSetToZero() public {
         vm.prank(admin);
-        wmb.configureFees(0, 0);
+        wmb.configureProtocolFees(0);
         assertEq(wmb.protocolFeeBPS(), 0);
-        assertEq(wmb.validatorsFeeBPS(), 0);
     }
 
-    function testConfigureFeesRevertsIfFeeExceedsMax() public {
+    function testConfigureProtocolFeesRevertsIfFeeExceedsMax() public {
         uint16 maxFeeBPS = wmb.exposed_maxFeeBPS();
         vm.startPrank(admin);
         vm.expectRevert(IWrap.FeeExceedsMaxFee.selector);
-        wmb.configureFees(maxFeeBPS + 1, maxFeeBPS);
-        vm.expectRevert(IWrap.FeeExceedsMaxFee.selector);
-        wmb.configureFees(maxFeeBPS, maxFeeBPS + 1);
+        wmb.configureProtocolFees(maxFeeBPS + 1);
         vm.stopPrank();
     }
 
-    function testConfigureFeesRevertsIfCallerIsNotAdmin() public {
+    function testConfigureProtocolFeesRevertsIfCallerIsNotAdmin() public {
         vm.prank(user);
         _expectMissingRoleRevert(user, DEFAULT_ADMIN_ROLE);
-        wmb.configureFees(protocolFeeBPS / 2, validatorsFeeBPS / 2);
+        wmb.configureProtocolFees(protocolFeeBPS / 2);
     }
 
     function testCreateAddToken() public {
@@ -209,21 +200,17 @@ contract WrapMintBurnTest is WrapTest {
         );
     }
 
-    function _claimValidatorFees() internal override {
-        wmb.claimValidatorFees();
-    }
-
-    function _accumulatedValidatorsFees()
+    function _accumulatedValidatorFees()
         internal
         view
         override
         returns (uint256)
     {
         uint256 contractBalance = IERC20(token).balanceOf(address(wrap));
-        return contractBalance - wmb.accumalatedProtocolFees(token);
+        return contractBalance - wmb.accumulatedProtocolFees(token);
     }
 
-    function testClaimProtocolFees() public withToken withSigners {
+    function testClaimProtocolFees() public withToken withValidators {
         uint256 expectedProtocolFee = 0;
 
         _executeApproveExecute(1000, user);
@@ -238,14 +225,14 @@ contract WrapMintBurnTest is WrapTest {
         uint256 initialAdminBalance = IERC20(token).balanceOf(admin);
         uint256 initialContractBalance = IERC20(token).balanceOf(address(wrap));
 
-        assertEq(wmb.accumalatedProtocolFees(token), expectedProtocolFee);
+        assertEq(wmb.accumulatedProtocolFees(token), expectedProtocolFee);
 
         vm.prank(admin);
         vm.expectEmit(true, true, true, true, token);
         emit Transfer(address(wrap), admin, expectedProtocolFee);
         wmb.claimProtocolFees(token);
 
-        assertEq(wmb.accumalatedProtocolFees(token), 0);
+        assertEq(wmb.accumulatedProtocolFees(token), 0);
         assertEq(
             IERC20(token).balanceOf(admin),
             initialAdminBalance + expectedProtocolFee
@@ -259,7 +246,7 @@ contract WrapMintBurnTest is WrapTest {
     function testClaimProtocolFeesRevertsIfCallerIsNotAdmin()
         public
         withToken
-        withSigners
+        withValidators
     {
         assertFalse(wrap.hasRole(DEFAULT_ADMIN_ROLE, user));
         _executeApproveExecute(1000, user);
@@ -297,14 +284,14 @@ contract WrapMintBurnTest is WrapTest {
 
     // TODO: Rename modifier
     modifier updatesAccumulatedProtocolFees(uint256 amount) {
-        uint256 initialAccumulatedProtocolFees = wmb.accumalatedProtocolFees(
+        uint256 initialAccumulatedProtocolFees = wmb.accumulatedProtocolFees(
             token
         );
 
         uint256 fee = wrap.exposed_calculateFee(amount, protocolFeeBPS);
         _;
         assertEq(
-            wmb.accumalatedProtocolFees(token),
+            wmb.accumulatedProtocolFees(token),
             initialAccumulatedProtocolFees + fee
         );
     }
@@ -353,7 +340,7 @@ contract WrapMintBurnTest is WrapTest {
     function testApproveExecuteUpdatesAccumulatedProtocolFees()
         public
         withToken
-        withSigners
+        withValidators
     {
         _testApproveExecuteUpdatesAccumulatedProtocolFees(tokenInfo.minAmount);
         _testApproveExecuteUpdatesAccumulatedProtocolFees(
@@ -373,7 +360,7 @@ contract WrapMintBurnTest is WrapTest {
     function testApproveExecuteUpdatesAccumulatedProtocolFees(uint256 amount)
         public
         withToken
-        withSigners
+        withValidators
     {
         vm.assume(amount >= tokenInfo.minAmount);
 
@@ -385,9 +372,9 @@ contract WrapMintBurnTest is WrapTest {
         uint256 id,
         address token,
         uint256 amount,
-        address recipient
+        address recipient,
+        uint256 fee
     ) internal override {
-        uint256 fee = wrap.exposed_executeFees(amount);
         vm.expectEmit(true, true, true, true, token);
         emit Transfer(address(0), recipient, amount - fee);
         vm.expectEmit(true, true, true, true, token);
