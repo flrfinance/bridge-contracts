@@ -796,11 +796,7 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         );
     }
 
-    function _testBatchApproveExecute(uint256 requestCount)
-        internal
-        withToken
-        withValidators
-    {
+    function _testBatchApproveExecute(uint256 requestCount) internal {
         vm.assume(requestCount > 0);
         vm.assume(requestCount < 100);
 
@@ -823,7 +819,17 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         _testBatchApproveExecute(requests, totalAmount);
     }
 
-    function testBatchApproveExecute(uint256 requestCount) public {
+    function testBatchApproveExecute() public withToken withValidators {
+        _testBatchApproveExecute(1);
+        _testBatchApproveExecute(5);
+        _testBatchApproveExecute(20);
+    }
+
+    function testBatchApproveExecute(uint256 requestCount)
+        public
+        withToken
+        withValidators
+    {
         _testBatchApproveExecute(requestCount);
     }
 
