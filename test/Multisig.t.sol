@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import { TestAsserter } from "./utils/TestAsserter.sol";
 import { Multisig } from "../src/libraries/Multisig.sol";
 import { MultisigHelpers } from "./utils/MultisigHelpers.sol";
+import "forge-std/console.sol";
 
 contract MultisigTest is TestAsserter, MultisigHelpers {
     using Multisig for Multisig.DualMultisig;
@@ -132,6 +133,23 @@ contract MultisigTest is TestAsserter, MultisigHelpers {
         multisig.configure(config);
     }
 
+    function testMultisigInitState() public {
+        assertEq(multisig.firstCommitteeAcceptanceQuorum, 1);
+        assertEq(multisig.secondCommitteeAcceptanceQuorum, 1);
+        assertEq(multisig.firstCommitteeSize, 0);
+        assertEq(multisig.secondCommitteeSize, 0);
+        assertEq(multisig.totalPoints, 0);
+        assertEq(multisig.nextExecutionIndex, 0);
+        _assertEq(
+            multisig.signers[address(0)].status,
+            Multisig.SignerStatus.Uninitialized
+        );
+        _assertEq(
+            multisig.requests[bytes32(0)].status,
+            Multisig.RequestStatus.NULL
+        );
+    }
+
     function testStatusWithNonExistentRequest() public {
         _assertEq(multisig.status(bytes32(0)), Multisig.RequestStatus.NULL);
     }
@@ -168,6 +186,10 @@ contract MultisigTest is TestAsserter, MultisigHelpers {
         withSigner(Committee.Second)
     {
         _testIsSigner(currentSigner);
+    }
+
+    function testIsSignerForNonExistentSigner() public {
+        assertFalse(multisig.isSigner(currentSigner));
     }
 
     function testPoints() public withApprovedRequest {
@@ -298,6 +320,18 @@ contract MultisigTest is TestAsserter, MultisigHelpers {
         multisig.addSigner(signer, false);
     }
 
+    function testAddSignerRevertsIfAlreadyRemoved() public {
+        multisig.addSigner(signer, true);
+        multisig.removeSigner(signer);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Multisig.SignerAlreadyExists.selector,
+                signer
+            )
+        );
+        multisig.addSigner(signer, true);
+    }
+
     function _testRemoveSigner(Committee committee)
         internal
         withSigner(committee)
@@ -357,9 +391,9 @@ contract MultisigTest is TestAsserter, MultisigHelpers {
         multisig.tryApprove(signer, hash, id);
     }
 
-    function testTryApproveIfSignerHasAlreadyApproved()
+    function _testTryApproveIfSignerHasAlreadyApproved(Committee committee)
         public
-        withAnySigner
+        withSigner(committee)
         withRequest
     {
         uint256 id = currentRequest.params.id;
@@ -385,8 +419,27 @@ contract MultisigTest is TestAsserter, MultisigHelpers {
         Multisig.SignerInfo memory signerInfo = multisig.signers[currentSigner];
         Multisig.Request memory request = multisig.requests[hash];
         uint256 signerMask = 1 << signerInfo.index;
-        assertEq(request.approvers, 0 | signerMask);
+        assertEq(request.approvers, signerMask);
+        if (committee == Committee.First) {
+            assertEq(request.approvalsFirstCommittee, 1);
+            assertEq(request.approvalsSecondCommittee, 0);
+        } else {
+            assertEq(request.approvalsFirstCommittee, 0);
+            assertEq(request.approvalsSecondCommittee, 1);
+        }
         _assertEq(request.status, Multisig.RequestStatus.Undecided);
+    }
+
+    function testTryApproveIfSignerFromFirstCommitteeHasAlreadyApproved()
+        public
+    {
+        _testTryApproveIfSignerHasAlreadyApproved(Committee.First);
+    }
+
+    function testTryApproveIfSignerFromSecondCommitteeHasAlreadyApproved()
+        public
+    {
+        _testTryApproveIfSignerHasAlreadyApproved(Committee.Second);
     }
 
     function _testTryApproveCreatesNewRequest(Committee committee)
@@ -406,7 +459,7 @@ contract MultisigTest is TestAsserter, MultisigHelpers {
         Multisig.SignerInfo memory signerInfo = multisig.signers[currentSigner];
         Multisig.Request memory request = multisig.requests[hash];
         uint256 signerMask = 1 << signerInfo.index;
-        assertEq(request.approvers, request.approvers | signerMask);
+        assertEq(request.approvers, signerMask);
         assertEq(multisig.approvedRequests[id], 0);
         _assertEq(request.status, Multisig.RequestStatus.Undecided);
         _assertEq(transition, Multisig.RequestStatusTransition.NULLToUndecided);
@@ -442,7 +495,7 @@ contract MultisigTest is TestAsserter, MultisigHelpers {
         ];
         uint256 firstSignerMask = 1 << firstSignerInfo.index;
         uint256 secondSignerMask = 1 << secondSignerInfo.index;
-        assertEq(request.approvers, 0 | firstSignerMask | secondSignerMask);
+        assertEq(request.approvers, firstSignerMask | secondSignerMask);
         assertEq(multisig.approvedRequests[id], hash);
         assertEq(multisig.totalPoints, 2);
         assertEq(Multisig.points(multisig, signerInSecondCommittee), 1);
