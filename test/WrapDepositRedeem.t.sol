@@ -67,6 +67,7 @@ contract WrapDepositRedeemTest is WrapTest {
 
     function _testOnDeposit(uint256 userInitialBalance, uint256 amountToDeposit)
         internal
+        virtual
         override
         withToken
         withMintedTokens(user, userInitialBalance)
@@ -97,8 +98,16 @@ contract WrapDepositRedeemTest is WrapTest {
         return wrap.exposed_calculateFee(amount, validatorFeeBPS);
     }
 
+    function _onExecutePerformExternalAction(
+        address,
+        uint256,
+        address,
+        uint256
+    ) internal virtual override {}
+
     function _testOnExecute(uint256 amount)
         internal
+        virtual
         override
         withToken
         withMintedTokens(address(wrap), amount)
@@ -162,18 +171,22 @@ contract WrapDepositRedeemTest is WrapTest {
         address recipient
     ) internal override {
         vm.expectEmit(true, true, true, true, token);
-        emit Transfer(recipient, address(wrap), amount);
+        emit Transfer(recipient, _custodian(), amount);
         vm.expectEmit(true, true, true, true, address(wrap));
         emit Deposit(depositIndex, token, amount - fee, recipient, fee);
     }
 
-    function _expectDepositFinalContractBalance(
-        uint256 initialContractBalance,
+    function _custodian() internal view virtual override returns (address) {
+        return address(wrap);
+    }
+
+    function _expectDepositFinalCustodianBalance(
+        uint256 initialCustodianBalance,
         uint256 amount
     ) internal override {
         assertEq(
-            IERC20(token).balanceOf(address(wrap)),
-            initialContractBalance + amount
+            IERC20(token).balanceOf(_custodian()),
+            initialCustodianBalance + amount
         );
     }
 
@@ -183,21 +196,21 @@ contract WrapDepositRedeemTest is WrapTest {
         uint256 amount,
         address recipient,
         uint256 fee
-    ) internal override {
+    ) internal virtual override {
         vm.expectEmit(true, true, true, true, token);
         emit Transfer(address(wrap), recipient, amount - fee);
         vm.expectEmit(true, true, true, true, address(wrap));
         emit Executed(id, token, amount - fee, recipient, fee);
     }
 
-    function _expectApproveExecuteFinalContractBalance(
-        uint256 initialContractBalance,
+    function _expectApproveExecuteFinalCustodianBalance(
+        uint256 initialCustodianBalance,
         uint256 amount,
         uint256 fee
     ) internal override {
         assertEq(
-            IERC20(token).balanceOf(address(wrap)),
-            initialContractBalance - amount + fee
+            IERC20(token).balanceOf(_custodian()),
+            initialCustodianBalance - amount + fee
         );
     }
 }

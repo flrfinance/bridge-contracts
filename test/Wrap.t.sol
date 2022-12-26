@@ -144,14 +144,16 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
 
     function _executeApproveExecute(uint256 amount, address recipient)
         internal
-        withMintedTokens(address(wrap), amount)
+        withMintedTokens(_custodian(), amount)
         returns (uint256 requestId)
     {
         requestId = wrap.nextExecutionIndex();
+        uint256 fee = _onExecuteFee(amount);
         vm.prank(validatorA);
         wrap.approveExecute(requestId, mirrorToken, amount, recipient);
         vm.prank(validatorB);
         wrap.approveExecute(requestId, mirrorToken, amount, recipient);
+        _onExecutePerformExternalAction(token, amount, user, fee);
     }
 
     function _executeDeposit(uint256 amount, address depositor)
@@ -333,7 +335,7 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
 
         uint256 initialValidatorABalance = IERC20(token).balanceOf(validatorA);
         uint256 initialValidatorBBalance = IERC20(token).balanceOf(validatorB);
-        uint256 initialContractBalance = IERC20(token).balanceOf(address(wrap));
+        uint256 initialCustodianBalance = IERC20(token).balanceOf(_custodian());
 
         uint256 accumulatedValidatorFees = _accumulatedValidatorFees();
 
@@ -390,8 +392,8 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
             initialValidatorBBalance + expectedValidatorBFees
         );
         assertEq(
-            IERC20(token).balanceOf(address(wrap)),
-            initialContractBalance -
+            IERC20(token).balanceOf(_custodian()),
+            initialCustodianBalance -
                 (expectedValidatorAFees + expectedValidatorBFees)
         );
     }
@@ -404,8 +406,11 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         address recipient
     ) internal virtual;
 
-    function _expectDepositFinalContractBalance(
-        uint256 initialContractBalance,
+    // Either the contract itself or the address of the custodian
+    function _custodian() internal view virtual returns (address);
+
+    function _expectDepositFinalCustodianBalance(
+        uint256 initialCustodianBalance,
         uint256 amount
     ) internal virtual;
 
@@ -414,7 +419,7 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         withMintedTokens(user, amount)
     {
         uint256 initialDepositorBalance = IERC20(token).balanceOf(user);
-        uint256 initialContractBalance = IERC20(token).balanceOf(address(wrap));
+        uint256 initialCustodianBalance = IERC20(token).balanceOf(_custodian());
 
         uint256 fee = wrap.exposed_depositFees(amount);
 
@@ -432,7 +437,7 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
             IERC20(token).balanceOf(user),
             initialDepositorBalance - amount
         );
-        _expectDepositFinalContractBalance(initialContractBalance, amount);
+        _expectDepositFinalCustodianBalance(initialCustodianBalance, amount);
     }
 
     function testDeposit() public withToken {
@@ -576,24 +581,33 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         uint256 fee
     ) internal virtual;
 
-    function _expectApproveExecuteFinalContractBalance(
-        uint256 initialContractBalance,
+    function _expectApproveExecuteFinalCustodianBalance(
+        uint256 initialCustodianBalance,
         uint256 totalAmount,
         uint256 totalFees
     ) internal virtual;
 
     function _onExecuteFee(uint256 amount) internal virtual returns (uint256);
 
+    // Custodian should transfer amount to recipient
+    // on WrapDepositRedeemCustodian
+    function _onExecutePerformExternalAction(
+        address token,
+        uint256 amount,
+        address recipient,
+        uint256 fee
+    ) internal virtual;
+
     function _testApproveExecute(uint256 amount)
         internal
         withToken
-        withMintedTokens(address(wrap), amount)
+        withMintedTokens(_custodian(), amount)
     {
         uint256 initialNextExecutionIndex = wrap.nextExecutionIndex();
 
         uint256 requestId = initialNextExecutionIndex;
         uint256 initialRecipientBalance = IERC20(token).balanceOf(user);
-        uint256 initialContractBalance = IERC20(token).balanceOf(address(wrap));
+        uint256 initialCustodianBalance = IERC20(token).balanceOf(_custodian());
 
         vm.prank(validatorA);
         vm.expectEmit(true, true, true, true);
@@ -602,13 +616,16 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
 
         assertEq(IERC20(token).balanceOf(user), initialRecipientBalance);
         assertEq(
-            IERC20(token).balanceOf(address(wrap)),
-            initialContractBalance
+            IERC20(token).balanceOf(_custodian()),
+            initialCustodianBalance
         );
 
         uint256 fee = _onExecuteFee(amount);
 
+        _onExecutePerformExternalAction(token, amount, user, fee);
+
         _expectApproveExecuteFinalEvents(requestId, token, amount, user, fee);
+
         vm.prank(validatorB);
         wrap.approveExecute(requestId, mirrorToken, amount, user);
 
@@ -616,8 +633,8 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
             IERC20(token).balanceOf(user),
             initialRecipientBalance + amount - fee
         );
-        _expectApproveExecuteFinalContractBalance(
-            initialContractBalance,
+        _expectApproveExecuteFinalCustodianBalance(
+            initialCustodianBalance,
             amount,
             fee
         );
@@ -749,10 +766,10 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
     function _testBatchApproveExecute(
         IWrap.RequestInfo[] memory requests,
         uint256 totalAmount
-    ) internal withMintedTokens(address(wrap), totalAmount) {
+    ) internal withMintedTokens(_custodian(), totalAmount) {
         uint256 initialNextExecutionIndex = wrap.nextExecutionIndex();
         uint256 initialRecipientBalance = IERC20(token).balanceOf(user);
-        uint256 initialContractBalance = IERC20(token).balanceOf(address(wrap));
+        uint256 initialCustodianBalance = IERC20(token).balanceOf(_custodian());
 
         for (uint256 i = 0; i < requests.length; i++) {
             IWrap.RequestInfo memory request = requests[i];
@@ -775,14 +792,20 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
             IWrap.RequestInfo memory request = requests[i];
             uint256 fee = _onExecuteFee(request.amount);
             totalFees += fee;
+            _onExecutePerformExternalAction(
+                token,
+                request.amount,
+                request.to,
+                fee
+            );
             _expectBatchApproveExecuteFinalEvents(request, fee);
         }
 
         vm.prank(validatorB);
         wrap.batchApproveExecute(requests);
 
-        _expectApproveExecuteFinalContractBalance(
-            initialContractBalance,
+        _expectApproveExecuteFinalCustodianBalance(
+            initialCustodianBalance,
             totalAmount,
             totalFees
         );

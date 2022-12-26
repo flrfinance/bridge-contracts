@@ -119,6 +119,13 @@ contract WrapMintBurnTest is WrapTest {
             wrap.exposed_calculateFee(amount, validatorFeeBPS);
     }
 
+    function _onExecutePerformExternalAction(
+        address,
+        uint256,
+        address,
+        uint256
+    ) internal override {}
+
     function _testOnExecute(uint256 amount)
         internal
         override
@@ -223,7 +230,7 @@ contract WrapMintBurnTest is WrapTest {
         expectedProtocolFee += wrap.exposed_calculateFee(1000, protocolFeeBPS);
 
         uint256 initialAdminBalance = IERC20(token).balanceOf(admin);
-        uint256 initialContractBalance = IERC20(token).balanceOf(address(wrap));
+        uint256 initialCustodianBalance = IERC20(token).balanceOf(_custodian());
 
         assertEq(wmb.accumulatedProtocolFees(token), expectedProtocolFee);
 
@@ -239,7 +246,7 @@ contract WrapMintBurnTest is WrapTest {
         );
         assertEq(
             IERC20(token).balanceOf(address(wrap)),
-            initialContractBalance - expectedProtocolFee
+            initialCustodianBalance - expectedProtocolFee
         );
     }
 
@@ -271,13 +278,17 @@ contract WrapMintBurnTest is WrapTest {
         emit Deposit(depositIndex, token, amount - fee, recipient, fee);
     }
 
-    function _expectDepositFinalContractBalance(
-        uint256 initialContractBalance,
+    function _custodian() internal view override returns (address) {
+        return address(wrap);
+    }
+
+    function _expectDepositFinalCustodianBalance(
+        uint256 initialCustodianBalance,
         uint256 amount
     ) internal override {
         assertEq(
-            IERC20(token).balanceOf(address(wrap)),
-            initialContractBalance +
+            IERC20(token).balanceOf(_custodian()),
+            initialCustodianBalance +
                 wrap.exposed_calculateFee(amount, protocolFeeBPS)
         );
     }
@@ -383,14 +394,14 @@ contract WrapMintBurnTest is WrapTest {
         emit Executed(id, token, amount - fee, recipient, fee);
     }
 
-    function _expectApproveExecuteFinalContractBalance(
-        uint256 initialContractBalance,
+    function _expectApproveExecuteFinalCustodianBalance(
+        uint256 initialCustodianBalance,
         uint256,
         uint256 fee
     ) internal override {
         assertEq(
-            IERC20(token).balanceOf(address(wrap)),
-            initialContractBalance + fee
+            IERC20(token).balanceOf(_custodian()),
+            initialCustodianBalance + fee
         );
     }
 }
