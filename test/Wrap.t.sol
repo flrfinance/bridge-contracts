@@ -545,6 +545,40 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         _testDepositRevertsWithInvalidTokenAmount(amount);
     }
 
+    function _testDepositRevertsIfToAddressIsInvalid(uint256 amount)
+        internal
+        withMintedTokens(user, amount)
+    {
+        vm.startPrank(user);
+        IERC20(token).approve(address(wrap), amount);
+        vm.expectRevert(IWrap.InvalidToAddress.selector);
+        wrap.deposit(token, amount, address(0));
+        vm.stopPrank();
+    }
+
+    function testDepositRevertsIfToAddressIsInvalid() public withToken {
+        uint256 minAmountWithFees = tokenInfo.minAmount +
+            wrap.exposed_depositFees(tokenInfo.minAmount);
+        _testDepositRevertsIfToAddressIsInvalid(minAmountWithFees);
+        _testDepositRevertsIfToAddressIsInvalid(minAmountWithFees + 1);
+        _testDepositRevertsIfToAddressIsInvalid(minAmountWithFees + 2);
+        _testDepositRevertsIfToAddressIsInvalid(tokenInfo.maxAmount - 2);
+        _testDepositRevertsIfToAddressIsInvalid(tokenInfo.maxAmount - 1);
+    }
+
+    function testDepositRevertsIfToAddressIsInvalid(uint256 amount)
+        public
+        withToken
+    {
+        vm.assume(
+            amount >
+                tokenInfo.minAmount +
+                    wrap.exposed_depositFees(tokenInfo.minAmount)
+        );
+        vm.assume(amount < tokenInfo.maxAmount);
+        _testDepositRevertsIfToAddressIsInvalid(amount);
+    }
+
     function _testHashRequest(
         uint256 id,
         address token_,
