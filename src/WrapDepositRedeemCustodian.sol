@@ -18,9 +18,9 @@ contract WrapDepositRedeemCustodian is WrapDepositRedeem {
 
     constructor(
         Multisig.Config memory config,
-        uint16 _validatorsFeeBPS,
+        uint16 _validatorFeeBPS,
         address _custodian
-    ) WrapDepositRedeem(config, _validatorsFeeBPS) {
+    ) WrapDepositRedeem(config, _validatorFeeBPS) {
         custodian = _custodian;
     }
 
@@ -40,6 +40,6 @@ contract WrapDepositRedeemCustodian is WrapDepositRedeem {
         uint256 amount,
         address
     ) internal view override returns (uint256 fee) {
-        fee = calculateFee(amount, validatorsFeeBPS);
+        fee = calculateFee(amount, validatorFeeBPS);
     }
 }

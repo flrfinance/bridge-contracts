@@ -115,7 +115,7 @@ interface IWrap is IAccessControlEnumerable {
     function nextExecutionIndex() external view returns (uint256);
 
     /// @dev Returns the validator fee basis points.
-    function validatorsFeeBPS() external view returns (uint16);
+    function validatorFeeBPS() external view returns (uint16);
 
     /// @dev Returns the total validator fees accumulated for a given token.
     /// @param token Address of the token for which to check its
@@ -141,7 +141,7 @@ interface IWrap is IAccessControlEnumerable {
     /// @dev Configure validator fees.
     /// @param validatorFeeBPS Validator fee in basis points.
     /// @notice Can only be called by the owner.
-    function configureValidatorFees(uint16 validatorsFeeBPS) external;
+    function configureValidatorFees(uint16 validatorFeeBPS) external;
 
     /// @dev Deposit tokens to bridge to the other side.
     /// @param token Token being deposited.

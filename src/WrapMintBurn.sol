@@ -25,9 +25,9 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
 
     constructor(
         Multisig.Config memory config,
-        uint16 _validatorsFeeBPS,
+        uint16 _validatorFeeBPS,
         uint16 _protocolFeeBPS
-    ) Wrap(config, _validatorsFeeBPS) {
+    ) Wrap(config, _validatorFeeBPS) {
         configureProtocolFees(_protocolFeeBPS);
     }
 
@@ -74,7 +74,7 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
     ) internal override returns (uint256 fee) {
         uint256 protocolFee = calculateFee(amount, protocolFeeBPS);
         accumulatedProtocolFees[token] += protocolFee;
-        fee = protocolFee + calculateFee(amount, validatorsFeeBPS);
+        fee = protocolFee + calculateFee(amount, validatorFeeBPS);
 
         IERC20MintBurn(token).mint(to, amount - fee);
         IERC20MintBurn(token).mint(address(this), fee);

@@ -44,12 +44,12 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     uint256 public depositIndex;
 
     /// @dev Validator fee basis points.
-    uint16 public validatorsFeeBPS;
+    uint16 public validatorFeeBPS;
 
-    constructor(Multisig.Config memory config, uint16 _validatorsFeeBPS) {
+    constructor(Multisig.Config memory config, uint16 _validatorFeeBPS) {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         multisig.configure(config);
-        configureValidatorFees(_validatorsFeeBPS);
+        configureValidatorFees(_validatorFeeBPS);
     }
 
     /// @dev Hook to execute on deposit.
@@ -237,14 +237,14 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     }
 
     /// @inheritdoc IWrap
-    function configureValidatorFees(uint16 _validatorsFeeBPS)
+    function configureValidatorFees(uint16 _validatorFeeBPS)
         public
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
-        if (_validatorsFeeBPS > maxFeeBPS) {
+        if (_validatorFeeBPS > maxFeeBPS) {
             revert FeeExceedsMaxFee();
         }
-        validatorsFeeBPS = _validatorsFeeBPS;
+        validatorFeeBPS = _validatorFeeBPS;
     }
 
     /// @dev Internal function to add a new token.

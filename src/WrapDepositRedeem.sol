@@ -16,8 +16,8 @@ contract WrapDepositRedeem is IWrapDepositRedeem, Wrap {
 
     using SafeERC20 for IERC20;
 
-    constructor(Multisig.Config memory config, uint16 _validatorsFeeBPS)
-        Wrap(config, _validatorsFeeBPS)
+    constructor(Multisig.Config memory config, uint16 _validatorFeeBPS)
+        Wrap(config, _validatorFeeBPS)
     {}
 
     /// @inheritdoc IWrap
@@ -52,7 +52,7 @@ contract WrapDepositRedeem is IWrapDepositRedeem, Wrap {
         uint256 amount,
         address to
     ) internal virtual override returns (uint256 fee) {
-        fee = calculateFee(amount, validatorsFeeBPS);
+        fee = calculateFee(amount, validatorFeeBPS);
         IERC20(token).safeTransfer(to, amount - fee);
     }
 
