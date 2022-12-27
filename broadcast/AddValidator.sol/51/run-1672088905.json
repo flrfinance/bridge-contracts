@@ -1,0 +1,31 @@
+{
+  "transactions": [
+    {
+      "hash": "0xcd0eb4173e4b693456c59837f0f39d7da7a3168d4e0e1a85c1f54e749c3f55bd",
+      "transactionType": "CREATE",
+      "contractName": null,
+      "contractAddress": "0x9550c9651b681ce9fe1f3d8c416f785e6350274c",
+      "function": null,
+      "arguments": null,
+      "transaction": {
+        "type": "0x00",
+        "from": "0xecaea3cd833ad3af575229280d91defb131130e9",
+        "to": "0x9550c9651b681ce9fe1f3d8c416f785e6350274c",
+        "gas": "0x12e1c",
+        "value": "0x0",
+        "data": "0x21a3fb85000000000000000000000000bb0d20cc598e4d34a7ef50d4b55cd43850048c230000000000000000000000000000000000000000000000000000000000000001",
+        "nonce": "0x8"
+      },
+      "additionalContracts": []
+    }
+  ],
+  "receipts": [],
+  "libraries": [],
+  "pending": [
+    "0xcd0eb4173e4b693456c59837f0f39d7da7a3168d4e0e1a85c1f54e749c3f55bd"
+  ],
+  "path": "/flr-wraps-contracts/broadcast/AddValidator.sol/51/run-latest.json",
+  "returns": {},
+  "timestamp": 1672088905,
+  "commit": "612298d"
+}

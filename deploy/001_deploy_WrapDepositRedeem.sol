@@ -9,7 +9,7 @@ contract DeployWrapDepositRedeem is Script {
     // TODO: fix the numbers
     uint8 constant firstCommitteeAcceptanceQuorum = 1;
     uint8 constant secondCommitteeAcceptanceQuorum = 1;
-    uint8 constant validatorFeeBPS = 0;
+    uint8 constant validatorFeeBPS = 50;
 
     function run() external {
         vm.startBroadcast();
