@@ -17,35 +17,33 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
 
     using SafeERC20 for IERC20;
 
-    /// @dev the role id for addresses that
-    /// can pause the contract
+    /// @dev The role ID for addresses that can pause the contract.
     bytes32 public constant PAUSE_ROLE = keccak256("PAUSE");
 
-    /// @dev max protocol/validator fee that can be set by the owner
+    /// @dev Max protocol/validator fee that can be set by the owner.
     uint16 constant maxFeeBPS = 500; // should be less than 10,000
 
-    /// @dev True if the contracts are paused,
-    /// false otherwise.
+    /// @dev True if the contracts are paused, false otherwise.
     bool public paused;
 
-    /// @dev Map tokenAddress to tokenInfo
+    /// @dev Map token address to token info.
     mapping(address => TokenInfoWithFees) public tokenInfos;
 
-    /// @dev Map mirrorToken to token
+    /// @dev Map mirror token address to token address.
     mapping(address => address) public mirrorTokens;
 
-    /// @dev Array of all the tokens added
-    /// @notice a token in the list might not be active
+    /// @dev Array of all the tokens added.
+    /// @notice A token in the list might not be active.
     address[] tokens;
 
-    /// @dev dual multisig to manage validators,
+    /// @dev Dual multisig to manage validators,
     /// attestations and request quorum.
     Multisig.DualMultisig internal multisig;
 
-    /// @dev the number of deposits.
+    /// @dev The number of deposits.
     uint256 public depositIndex;
 
-    /// @dev validator fees basis points token on mint
+    /// @dev Validator fee basis points.
     uint16 public validatorsFeeBPS;
 
     constructor(Multisig.Config memory config, uint16 _validatorsFeeBPS) {
@@ -54,23 +52,36 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         configureValidatorFees(_validatorsFeeBPS);
     }
 
+    /// @dev Hook to execute on deposit.
+    /// @param token Address of the token being deposited.
+    /// @param amount The amount being deposited.
+    /// @return fee The fee charged to the depositor.
     function onDeposit(address token, uint256 amount)
         internal
         virtual
         returns (uint256 fee);
 
+    /// @dev Returns the fees charged for a given deposit amount.
+    /// @param amount The deposit amount in question.
+    /// @return fee The fee charged for the given deposit amount.
     function depositFees(uint256 amount)
         internal
         view
         virtual
         returns (uint256 fee);
 
+    /// @dev Hook to execute on successful bridging.
+    /// @param token Address of the token being bridged.
+    /// @param amount The amount being bridged.
+    /// @param to The address where the bridged are being sent to.
+    /// @return fee The fee charged to the user.
     function onExecute(
         address token,
         uint256 amount,
         address to
     ) internal virtual returns (uint256 fee);
 
+    /// @inheritdoc IWrap
     function accumulatedValidatorFees(address token)
         public
         view
@@ -88,8 +99,8 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     /// @dev Modifier to make a function callable only when the token and amount is correct.
     modifier isValidTokenAmount(address token, uint256 amount) {
         TokenInfoWithFees memory t = tokenInfos[token];
-        // notice that amount should be greater than minAmountWithFees
-        // this is required as amount after the fees should be greater
+        // Notice that amount should be greater than minAmountWithFees.
+        // This is required as amount after the fees should be greater
         // than minAmount so that when this is approved it passes the
         // isValidMirrorTokenAmount check.
         if (t.maxAmount <= amount || t.minAmountWithFees > amount) {
@@ -112,7 +123,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         return multisig.nextExecutionIndex;
     }
 
-    /// @dev Internal function to calculate fees
+    /// @dev Internal function to calculate fees by amount and BPS.
     function calculateFee(uint256 amount, uint16 feeBPS)
         internal
         pure
@@ -140,7 +151,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         emit Deposit(id, token, amount - fee, to, fee);
     }
 
-    /// @dev internal function to calculate the hash of the request.
+    /// @dev Internal function to calculate the hash of the request.
     function hashRequest(
         uint256 id,
         address token,
@@ -157,7 +168,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         uint256 amount,
         address to
     ) public isNotPaused isValidMirrorTokenAmount(mirrorToken, amount) {
-        // if the request id is lower than the last executed id then simply ignore the request
+        // If the request ID is lower than the last executed ID then simply ignore the request.
         if (id < multisig.nextExecutionIndex) {
             return;
         }
@@ -236,10 +247,10 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         validatorsFeeBPS = _validatorsFeeBPS;
     }
 
-    /// @dev internal function to add new token.
-    /// @param token token that will be deposited in the contract.
-    /// @param mirrorToken token that will be deposited in the mirror contract.
-    /// @param tokenInfo token info associated to the token.
+    /// @dev Internal function to add a new token.
+    /// @param token Token that will be deposited in the contract.
+    /// @param mirrorToken Token that will be deposited in the mirror contract.
+    /// @param tokenInfo Token info associated with the token.
     function _addToken(
         address token,
         address mirrorToken,

@@ -14,6 +14,9 @@ contract WrapToken is ERC20PresetMinterPauser {
         _decimals = decimals_;
     }
 
+    /// @dev The number of decimals used to get the token's
+    /// user representation.
+    /// @return The number of decimals.
     function decimals() public view virtual override returns (uint8) {
         return _decimals;
     }

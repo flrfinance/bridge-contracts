@@ -17,10 +17,10 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
 
     using SafeERC20 for IERC20MintBurn;
 
-    /// @dev mapping to keep track of protocol fees accumulated per token
+    /// @dev Map token address to accumulated protocol fees.
     mapping(address => uint256) public accumulatedProtocolFees;
 
-    /// @dev protocol fees basis point taken on mint and burn
+    /// @dev Protocol fee basis points charged on mint and burn.
     uint16 public protocolFeeBPS;
 
     constructor(
@@ -43,6 +43,7 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
             accumulatedProtocolFees[token];
     }
 
+    /// @inheritdoc Wrap
     function depositFees(uint256 amount)
         internal
         view
@@ -52,6 +53,7 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
         fee = calculateFee(amount, protocolFeeBPS);
     }
 
+    /// @inheritdoc Wrap
     function onDeposit(address token, uint256 amount)
         internal
         override
@@ -64,6 +66,7 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
         IERC20MintBurn(token).transferFrom(msg.sender, address(this), fee);
     }
 
+    /// @inheritdoc Wrap
     function onExecute(
         address token,
         uint256 amount,
@@ -98,6 +101,7 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
         }
     }
 
+    /// @inheritdoc IWrapMintBurn
     function createAddToken(
         string memory tokenName,
         string memory tokenSymbol,

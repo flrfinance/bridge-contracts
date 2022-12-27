@@ -3,36 +3,36 @@ pragma solidity ^0.8.15;
 
 import { IWrap } from "./IWrap.sol";
 
-/// @title interface for Mint and Burn side of
-/// of the Wraps contract
+/// @title Interface for the side of Wraps where tokens are minted and burnt.
 interface IWrapMintBurn is IWrap {
-    /// @dev Get the protocol fees accumulated for a given token
-    /// @param token token address to get the fees.
-    /// @return balance protocol fees balance for the token
+    /// @dev Returns the total protocol fees accumulated for a given token.
+    /// @param token Address of the token for which to check its
+    /// corresponding accumulated protocol fees.
+    /// @return balance Total accumulated protocol fees for the given token.
     function accumulatedProtocolFees(address token)
         external
         view
         returns (uint256 balance);
 
-    /// @dev Get the protocol fee basis points
+    /// @dev Returns the protocol fee basis points.
     function protocolFeeBPS() external view returns (uint16);
 
     /// @dev Configure protocol fees.
-    /// @param protocolFeeBPS protocol fees in basis points.
-    /// @notice this function can only be called by the owner.
-    /// @notice this function should update the minAmountWithFees
-    /// for all the tokens.
+    /// @param protocolFeeBPS Protocol fee in basis points.
+    /// @notice Can only be called by the owner.
+    /// @notice Should update minAmountWithFees for all tokens.
     function configureProtocolFees(uint16 protocolFeeBPS) external;
 
-    /// @dev Create a wrap token link it to a mirror token.
-    /// @param tokenName name of the token to be created.
-    /// @param tokenSymbol symbol of the token to be created.
-    /// @param mirrorToken the token that will be deposited in mirror contract.
-    /// @param mirrorTokenDecimals decimals of the mirror token.
-    /// @param tokenInfo token info associated to the token.
-    /// @return the address of the new wrap token
-    /// @notice set maxAmount to 0 to disable the token.
-    /// @notice can be only called by the owner.
+    /// @dev Deploy a new token contract and link it to its mirror token.
+    /// @param tokenName Name of the token to be created.
+    /// @param tokenSymbol Symbol of the token to be created.
+    /// @param mirrorToken Address of the token that will be deposited in
+    /// the mirror contract.
+    /// @param mirrorTokenDecimals Decimals of the mirror token.
+    /// @param tokenInfo Info associated with the token.
+    /// @return Address of the new wrap token.
+    /// @notice Set maxAmount to zero to disable the token.
+    /// @notice Can only be called by the owner.
     function createAddToken(
         string memory tokenName,
         string memory tokenSymbol,
@@ -41,7 +41,7 @@ interface IWrapMintBurn is IWrap {
         TokenInfo calldata tokenInfo
     ) external returns (address);
 
-    /// @dev Allows the owner to claim the protocol fees
-    /// @notice can only be called by the owner
+    /// @dev Allows the owner to claim the accumulated protocol fees.
+    /// @notice Can only be called by the owner.
     function claimProtocolFees(address token) external;
 }

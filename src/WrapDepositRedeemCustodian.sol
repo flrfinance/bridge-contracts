@@ -12,6 +12,8 @@ import { Multisig } from "./libraries/Multisig.sol";
 contract WrapDepositRedeemCustodian is WrapDepositRedeem {
     using SafeERC20 for IERC20;
 
+    /// @dev The address of the custodian who holds the tokens
+    /// that are being bridged.
     address public immutable custodian;
 
     constructor(
@@ -22,6 +24,7 @@ contract WrapDepositRedeemCustodian is WrapDepositRedeem {
         custodian = _custodian;
     }
 
+    /// @inheritdoc WrapDepositRedeem
     function onDeposit(address token, uint256 amount)
         internal
         override
@@ -31,6 +34,7 @@ contract WrapDepositRedeemCustodian is WrapDepositRedeem {
         return depositFees(amount);
     }
 
+    /// @inheritdoc WrapDepositRedeem
     function onExecute(
         address,
         uint256 amount,

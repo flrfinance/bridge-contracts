@@ -30,10 +30,12 @@ contract WrapDepositRedeem is IWrapDepositRedeem, Wrap {
         return IERC20(token).balanceOf(address(this));
     }
 
+    /// @inheritdoc Wrap
     function depositFees(uint256) internal pure override returns (uint256 fee) {
         return 0;
     }
 
+    /// @inheritdoc Wrap
     function onDeposit(address token, uint256 amount)
         internal
         virtual
@@ -44,6 +46,7 @@ contract WrapDepositRedeem is IWrapDepositRedeem, Wrap {
         return depositFees(amount);
     }
 
+    /// @inheritdoc Wrap
     function onExecute(
         address token,
         uint256 amount,
