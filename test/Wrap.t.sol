@@ -142,7 +142,10 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         assertEq(wrap.mirrorTokens(mirrorToken), address(token));
     }
 
-    function _executeApproveExecute(uint256 amount, address recipient)
+    function _executeApproveExecute(
+        uint256 amount,
+        address recipient
+    )
         internal
         withMintedTokens(_custodian(), amount)
         returns (uint256 requestId)
@@ -156,11 +159,10 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         _onExecutePerformExternalAction(token, amount, user, fee);
     }
 
-    function _executeDeposit(uint256 amount, address depositor)
-        internal
-        withMintedTokens(depositor, amount)
-        returns (uint256)
-    {
+    function _executeDeposit(
+        uint256 amount,
+        address depositor
+    ) internal withMintedTokens(depositor, amount) returns (uint256) {
         vm.startPrank(user);
         IERC20(token).approve(address(wrap), amount);
         uint256 id = wrap.deposit(token, amount, user);
@@ -203,9 +205,9 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         );
     }
 
-    function _testAccumulatedValidatorFees(uint256 validatorFees)
-        internal
-        virtual;
+    function _testAccumulatedValidatorFees(
+        uint256 validatorFees
+    ) internal virtual;
 
     function testAccumulatedValidatorFees() public {
         _testAccumulatedValidatorFees(0);
@@ -219,9 +221,10 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         _testAccumulatedValidatorFees(validatorFees);
     }
 
-    function _testOnDeposit(uint256 userInitialBalance, uint256 amountToDeposit)
-        internal
-        virtual;
+    function _testOnDeposit(
+        uint256 userInitialBalance,
+        uint256 amountToDeposit
+    ) internal virtual;
 
     function testOnDeposit() public {
         uint256 userInitialBalance = 1337;
@@ -238,10 +241,11 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         _testOnDeposit(userInitialBalance, amountToDeposit);
     }
 
-    function testOnDeposit(uint256 userInitialBalance, uint256 amountToDeposit)
-        public
-    {
-        vm.assume(amountToDeposit < ((2**256) - 1) / uint256((2**16) - 1));
+    function testOnDeposit(
+        uint256 userInitialBalance,
+        uint256 amountToDeposit
+    ) public {
+        vm.assume(amountToDeposit < ((2 ** 256) - 1) / uint256((2 ** 16) - 1));
         vm.assume(amountToDeposit <= userInitialBalance);
         _testOnDeposit(userInitialBalance, amountToDeposit);
     }
@@ -257,7 +261,7 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
     }
 
     function testDepositFees(uint256 amount) public {
-        vm.assume(amount < ((2**256) - 1) / uint256((2**16) - 1));
+        vm.assume(amount < ((2 ** 256) - 1) / uint256((2 ** 16) - 1));
         _testDepositFees(amount);
     }
 
@@ -272,7 +276,7 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
     }
 
     function testOnExecute(uint256 amount) public {
-        vm.assume(amount < ((2**256) - 1) / uint256((2**16) - 1));
+        vm.assume(amount < ((2 ** 256) - 1) / uint256((2 ** 16) - 1));
         _testOnExecute(amount);
     }
 
@@ -297,7 +301,7 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
     }
 
     function testCalculateFee(uint256 amount, uint16 feeBPS) public {
-        vm.assume(amount < ((2**256) - 1) / uint256((2**16) - 1));
+        vm.assume(amount < ((2 ** 256) - 1) / uint256((2 ** 16) - 1));
         assertEq(
             wrap.exposed_calculateFee(amount, feeBPS),
             (amount * feeBPS) / 10000
@@ -414,10 +418,9 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         uint256 amount
     ) internal virtual;
 
-    function _testDeposit(uint256 amount)
-        internal
-        withMintedTokens(user, amount)
-    {
+    function _testDeposit(
+        uint256 amount
+    ) internal withMintedTokens(user, amount) {
         uint256 initialDepositorBalance = IERC20(token).balanceOf(user);
         uint256 initialCustodianBalance = IERC20(token).balanceOf(_custodian());
 
@@ -460,10 +463,9 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         _testDeposit(amount);
     }
 
-    function _testDepositRevertsIfContractsPaused(uint256 amount)
-        internal
-        withMintedTokens(user, amount)
-    {
+    function _testDepositRevertsIfContractsPaused(
+        uint256 amount
+    ) internal withMintedTokens(user, amount) {
         vm.startPrank(user);
         IERC20(token).approve(address(wrap), amount);
         vm.expectRevert(IWrap.ContractPaused.selector);
@@ -481,11 +483,9 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         _testDepositRevertsIfContractsPaused(tokenInfo.maxAmount - 1);
     }
 
-    function testDepositRevertsIfContractsPaused(uint256 amount)
-        public
-        withToken
-        withPaused
-    {
+    function testDepositRevertsIfContractsPaused(
+        uint256 amount
+    ) public withToken withPaused {
         vm.assume(
             amount >
                 tokenInfo.minAmount +
@@ -495,10 +495,9 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         _testDepositRevertsIfContractsPaused(amount);
     }
 
-    function _testDepositRevertsWithInvalidTokenAmount(uint256 amount)
-        internal
-        withMintedTokens(user, amount)
-    {
+    function _testDepositRevertsWithInvalidTokenAmount(
+        uint256 amount
+    ) internal withMintedTokens(user, amount) {
         vm.startPrank(user);
         IERC20(token).approve(address(wrap), amount);
         vm.expectRevert(IWrap.InvalidTokenAmount.selector);
@@ -537,18 +536,16 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         _testDepositRevertsWithInvalidTokenAmount(tokenInfo.maxAmount + 3);
     }
 
-    function testDepositRevertsIfAmountIsGreaterThanMaxAmount(uint256 amount)
-        public
-        withToken
-    {
+    function testDepositRevertsIfAmountIsGreaterThanMaxAmount(
+        uint256 amount
+    ) public withToken {
         vm.assume(amount > tokenInfo.maxAmount);
         _testDepositRevertsWithInvalidTokenAmount(amount);
     }
 
-    function _testDepositRevertsIfToAddressIsInvalid(uint256 amount)
-        internal
-        withMintedTokens(user, amount)
-    {
+    function _testDepositRevertsIfToAddressIsInvalid(
+        uint256 amount
+    ) internal withMintedTokens(user, amount) {
         vm.startPrank(user);
         IERC20(token).approve(address(wrap), amount);
         vm.expectRevert(IWrap.InvalidToAddress.selector);
@@ -566,10 +563,9 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         _testDepositRevertsIfToAddressIsInvalid(tokenInfo.maxAmount - 1);
     }
 
-    function testDepositRevertsIfToAddressIsInvalid(uint256 amount)
-        public
-        withToken
-    {
+    function testDepositRevertsIfToAddressIsInvalid(
+        uint256 amount
+    ) public withToken {
         vm.assume(
             amount >
                 tokenInfo.minAmount +
@@ -632,11 +628,9 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         uint256 fee
     ) internal virtual;
 
-    function _testApproveExecute(uint256 amount)
-        internal
-        withToken
-        withMintedTokens(_custodian(), amount)
-    {
+    function _testApproveExecute(
+        uint256 amount
+    ) internal withToken withMintedTokens(_custodian(), amount) {
         uint256 initialNextExecutionIndex = wrap.nextExecutionIndex();
 
         uint256 requestId = initialNextExecutionIndex;
@@ -684,20 +678,17 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         _testApproveExecute(tokenInfo.maxAmount - 1);
     }
 
-    function testApproveExecute(uint256 amount)
-        public
-        withToken
-        withValidators
-    {
+    function testApproveExecute(
+        uint256 amount
+    ) public withToken withValidators {
         vm.assume(amount > tokenInfo.minAmount);
         vm.assume(amount < tokenInfo.maxAmount);
         _testApproveExecute(amount);
     }
 
-    function _testApproveExecuteRevertsIfContractsPaused(uint256 amount)
-        internal
-        withMintedTokens(user, amount)
-    {
+    function _testApproveExecuteRevertsIfContractsPaused(
+        uint256 amount
+    ) internal withMintedTokens(user, amount) {
         uint256 initialNextExecutionIndex = wrap.nextExecutionIndex();
         uint256 requestId = initialNextExecutionIndex;
         vm.prank(validatorA);
@@ -718,21 +709,17 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         _testApproveExecuteRevertsIfContractsPaused(tokenInfo.maxAmount - 1);
     }
 
-    function testApproveExecuteRevertsIfContractsPaused(uint256 amount)
-        public
-        withToken
-        withValidators
-        withPaused
-    {
+    function testApproveExecuteRevertsIfContractsPaused(
+        uint256 amount
+    ) public withToken withValidators withPaused {
         vm.assume(amount > tokenInfo.minAmount);
         vm.assume(amount < tokenInfo.maxAmount);
         _testApproveExecuteRevertsIfContractsPaused(amount);
     }
 
-    function _testApproveExecuteRevertsWithInvalidTokenAmount(uint256 amount)
-        internal
-        withMintedTokens(user, amount)
-    {
+    function _testApproveExecuteRevertsWithInvalidTokenAmount(
+        uint256 amount
+    ) internal withMintedTokens(user, amount) {
         uint256 initialNextExecutionIndex = wrap.nextExecutionIndex();
         uint256 requestId = initialNextExecutionIndex;
         vm.prank(validatorA);
@@ -882,11 +869,9 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         _testBatchApproveExecute(20);
     }
 
-    function testBatchApproveExecute(uint256 requestCount)
-        public
-        withToken
-        withValidators
-    {
+    function testBatchApproveExecute(
+        uint256 requestCount
+    ) public withToken withValidators {
         _testBatchApproveExecute(requestCount);
     }
 
@@ -936,13 +921,13 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         uint16 newValidatorFeeBPS = validatorFeeBPS / 2;
         vm.prank(admin);
         wrap.configureValidatorFees(newValidatorFeeBPS);
-        assertEq(wrap.validatorsFeeBPS(), newValidatorFeeBPS);
+        assertEq(wrap.validatorFeeBPS(), newValidatorFeeBPS);
     }
 
     function testConfigureValidatorFeesCanBeSetToZero() public {
         vm.prank(admin);
         wrap.configureValidatorFees(0);
-        assertEq(wrap.validatorsFeeBPS(), 0);
+        assertEq(wrap.validatorFeeBPS(), 0);
     }
 
     function testConfigureValidatorFeesRevertsIfFeeExceedsMax() public {
@@ -1118,10 +1103,9 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         wrap.addValidator(validator, false);
     }
 
-    function _testRemoveValidator(Committee committee)
-        internal
-        withValidator(committee)
-    {
+    function _testRemoveValidator(
+        Committee committee
+    ) internal withValidator(committee) {
         vm.prank(admin);
         wrap.removeValidator(validator);
         Multisig.SignerInfo memory validatorInfo = wrap
