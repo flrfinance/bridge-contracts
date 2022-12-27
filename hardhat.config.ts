@@ -15,6 +15,7 @@ dotenv.config();
 function getRemappings() {
   return fs
     .readFileSync("remappings.txt", "utf8")
+    .replace("@openzeppelin/", "openzeppelin-") // hack to get hardhat to compile
     .split("\n")
     .filter(Boolean)
     .map((line) => line.trim().split("="));
