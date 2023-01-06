@@ -259,6 +259,9 @@ library Multisig {
     /// @param signer The signer approving the request.
     /// @param hash The hash of the request being approved.
     /// @return The request's status transition.
+    /// @dev Notice that this code assumes that the hash is generated from
+    /// the ID and other data outside of this function. It is important to include
+    /// the ID in the hash.
     function tryApprove(
         DualMultisig storage s,
         address signer,
