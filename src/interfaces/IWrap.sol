@@ -182,10 +182,21 @@ interface IWrap is IAccessControlEnumerable {
 
     /// @dev Add a new validator to the contract.
     /// @param validator Address of the validator.
-    /// @param isFirstCommittee True when adding the validator to the first committee,
+    /// @param isFirstCommittee True when adding the validator to the first committee.
+    /// @param feeRecipient Address of the fee recipient.
     /// false when adding the validator to the second committee.
     /// @notice Can only be called by the owner.
-    function addValidator(address validator, bool isFirstCommittee) external;
+    function addValidator(
+        address validator,
+        bool isFirstCommittee,
+        address feeRecipient
+    ) external;
+
+    /// @dev Change fee recipient for a validator.
+    /// @param validator Address of the validator.
+    /// @param feeRecipient Address of the new fee recipient.
+    function changeFeeRecipient(address validator, address feeRecipient)
+        external;
 
     /// @dev Remove existing validator from the contract.
     /// @param validator Address of the validator.
@@ -193,7 +204,9 @@ interface IWrap is IAccessControlEnumerable {
     /// @notice The fees accumulated by the validator are distributed before being removed.
     function removeValidator(address validator) external;
 
-    /// @dev Allows validators to claim their accumulated fees.
-    /// @notice Can only be called by a validator.
-    function claimValidatorFees() external;
+    /// @dev Allows to claim accumulated fees for a validator.
+    /// @param validator Address of the validator.
+    /// @notice Can be triggered by anyone but the fee is transfered to the
+    /// set feeRecepient for the validator.
+    function claimValidatorFees(address validator) external;
 }

@@ -12,7 +12,7 @@ contract AddValidator is Script {
 
     function run() external {
         vm.startBroadcast();
-        IWrap(wrap).addValidator(validator, isFirstCommittee);
+        IWrap(wrap).addValidator(validator, isFirstCommittee, address(0));
         vm.stopBroadcast();
     }
 }

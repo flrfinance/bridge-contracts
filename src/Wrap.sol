@@ -32,6 +32,9 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     /// @dev Map mirror token address to token address.
     mapping(address => address) public mirrorTokens;
 
+    /// @dev Map validator to its fee recipient.
+    mapping(address => address) public feeRecipients;
+
     /// @dev Array of all the tokens added.
     /// @notice A token in the list might not be active.
     address[] tokens;
@@ -289,11 +292,13 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     }
 
     /// @inheritdoc IWrap
-    function addValidator(address validator, bool isFirstCommittee)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
+    function addValidator(
+        address validator,
+        bool isFirstCommittee,
+        address feeRecipient
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         multisig.addSigner(validator, isFirstCommittee);
+        feeRecipients[validator] = feeRecipient;
     }
 
     /// @inheritdoc IWrap
@@ -301,23 +306,28 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
-        _claimValidatorFees(validator);
+        claimValidatorFees(validator);
         multisig.removeSigner(validator);
     }
 
-    function _claimValidatorFees(address validator) internal {
+    /// @inheritdoc IWrap
+    function changeFeeRecipient(address validator, address feeRecipient)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        feeRecipients[validator] = feeRecipient;
+    }
+
+    /// @inheritdoc IWrap
+    function claimValidatorFees(address validator) public {
+        address feeRecipient = feeRecipients[validator];
         uint64 totalPoints = multisig.totalPoints;
         uint64 points = multisig.clearPoints(validator);
         for (uint256 i = 0; i < tokens.length; i++) {
             address token = tokens[i];
             uint256 tokenValidatorFee = (accumulatedValidatorFees(token) *
                 points) / totalPoints;
-            IERC20(token).safeTransfer(validator, tokenValidatorFee);
+            IERC20(token).safeTransfer(feeRecipient, tokenValidatorFee);
         }
-    }
-
-    /// @inheritdoc IWrap
-    function claimValidatorFees() public {
-        _claimValidatorFees(msg.sender);
     }
 }
