@@ -6,10 +6,9 @@ import { Multisig } from "../../src/libraries/Multisig.sol";
 import { IWrap } from "../../src/interfaces/IWrap.sol";
 
 contract TestAsserter is Test {
-    function _assertEq(
-        Multisig.SignerStatus _a,
-        Multisig.SignerStatus _b
-    ) internal {
+    function _assertEq(Multisig.SignerStatus _a, Multisig.SignerStatus _b)
+        internal
+    {
         assertTrue(_a == _b);
     }
 
@@ -20,10 +19,9 @@ contract TestAsserter is Test {
         assertTrue(_a == _b);
     }
 
-    function _assertEq(
-        Multisig.RequestStatus _a,
-        Multisig.RequestStatus _b
-    ) internal {
+    function _assertEq(Multisig.RequestStatus _a, Multisig.RequestStatus _b)
+        internal
+    {
         assertTrue(_a == _b);
     }
 }

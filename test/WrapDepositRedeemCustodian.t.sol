@@ -39,10 +39,12 @@ contract WrapDepositRedeemCustodianTest is WrapDepositRedeemTest {
         return custodian;
     }
 
-    function _testOnDeposit(
-        uint256 userInitialBalance,
-        uint256 amountToDeposit
-    ) internal override withToken withMintedTokens(user, userInitialBalance) {
+    function _testOnDeposit(uint256 userInitialBalance, uint256 amountToDeposit)
+        internal
+        override
+        withToken
+        withMintedTokens(user, userInitialBalance)
+    {
         uint256 initialCustodianBalance = IERC20(token).balanceOf(custodian);
         uint256 initialContractBalance = IERC20(token).balanceOf(address(wrap));
         vm.startPrank(user);
@@ -88,9 +90,12 @@ contract WrapDepositRedeemCustodianTest is WrapDepositRedeemTest {
         emit Executed(id, token, amount - fee, recipient, fee);
     }
 
-    function _testOnExecute(
-        uint256 amount
-    ) internal override withToken withMintedTokens(address(wrap), amount) {
+    function _testOnExecute(uint256 amount)
+        internal
+        override
+        withToken
+        withMintedTokens(address(wrap), amount)
+    {
         uint256 initialRecipientBalance = IERC20(token).balanceOf(user);
         uint256 fee = _onExecuteFee(amount);
         assertEq(wrap.exposed_onExecute(token, amount, user), fee);

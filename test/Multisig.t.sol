@@ -79,9 +79,11 @@ contract MultisigTest is TestAsserter, MultisigHelpers {
         _;
     }
 
-    function _craftUndecidedRequest(
-        RequestParams memory requestParams
-    ) internal withCustomRequest(requestParams) withAnySigner {
+    function _craftUndecidedRequest(RequestParams memory requestParams)
+        internal
+        withCustomRequest(requestParams)
+        withAnySigner
+    {
         multisig.tryApprove(signer, currentRequest.hash, requestParams.id);
     }
 
@@ -90,9 +92,11 @@ contract MultisigTest is TestAsserter, MultisigHelpers {
         _;
     }
 
-    function _craftApprovedRequest(
-        RequestParams memory requestParams
-    ) internal withCustomRequest(requestParams) withSignersFromBothCommittees {
+    function _craftApprovedRequest(RequestParams memory requestParams)
+        internal
+        withCustomRequest(requestParams)
+        withSignersFromBothCommittees
+    {
         multisig.tryApprove(
             signerInFirstCommittee,
             currentRequest.hash,
@@ -328,9 +332,10 @@ contract MultisigTest is TestAsserter, MultisigHelpers {
         multisig.addSigner(signer, true);
     }
 
-    function _testRemoveSigner(
-        Committee committee
-    ) internal withSigner(committee) {
+    function _testRemoveSigner(Committee committee)
+        internal
+        withSigner(committee)
+    {
         multisig.removeSigner(currentSigner);
         Multisig.SignerInfo memory signerInfo = multisig.signers[currentSigner];
         _assertEq(signerInfo.status, Multisig.SignerStatus.Removed);
@@ -351,9 +356,9 @@ contract MultisigTest is TestAsserter, MultisigHelpers {
         multisig.removeSigner(signer);
     }
 
-    function _testRemoveSignerRevertsIfAlreadyRemoved(
-        Committee committee
-    ) internal {
+    function _testRemoveSignerRevertsIfAlreadyRemoved(Committee committee)
+        internal
+    {
         _testRemoveSigner(committee);
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -386,9 +391,11 @@ contract MultisigTest is TestAsserter, MultisigHelpers {
         multisig.tryApprove(signer, hash, id);
     }
 
-    function _testTryApproveIfSignerHasAlreadyApproved(
-        Committee committee
-    ) public withSigner(committee) withRequest {
+    function _testTryApproveIfSignerHasAlreadyApproved(Committee committee)
+        public
+        withSigner(committee)
+        withRequest
+    {
         uint256 id = currentRequest.params.id;
         bytes32 hash = currentRequest.hash;
 
@@ -435,9 +442,7 @@ contract MultisigTest is TestAsserter, MultisigHelpers {
         _testTryApproveIfSignerHasAlreadyApproved(Committee.Second);
     }
 
-    function _testTryApproveCreatesNewRequest(
-        Committee committee
-    )
+    function _testTryApproveCreatesNewRequest(Committee committee)
         internal
         withSigner(committee)
         withRequest
@@ -478,10 +483,9 @@ contract MultisigTest is TestAsserter, MultisigHelpers {
         assertEq(request.approvalsSecondCommittee, 1);
     }
 
-    function _assertCorrectAcceptedRequestState(
-        bytes32 hash,
-        uint256 id
-    ) internal {
+    function _assertCorrectAcceptedRequestState(bytes32 hash, uint256 id)
+        internal
+    {
         Multisig.Request memory request = multisig.requests[hash];
         Multisig.SignerInfo memory firstSignerInfo = multisig.signers[
             signerInFirstCommittee

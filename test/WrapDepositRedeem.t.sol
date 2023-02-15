@@ -53,9 +53,10 @@ contract WrapDepositRedeemTest is WrapTest {
         assertEq(wrap.validatorFeeBPS(), validatorFeeBPS);
     }
 
-    function _testAccumulatedValidatorFees(
-        uint256 validatorFees
-    ) internal override {
+    function _testAccumulatedValidatorFees(uint256 validatorFees)
+        internal
+        override
+    {
         vm.mockCall(
             token,
             abi.encodeWithSelector(IERC20.balanceOf.selector),
@@ -64,10 +65,7 @@ contract WrapDepositRedeemTest is WrapTest {
         assertEq(wdr.accumulatedValidatorFees(token), validatorFees);
     }
 
-    function _testOnDeposit(
-        uint256 userInitialBalance,
-        uint256 amountToDeposit
-    )
+    function _testOnDeposit(uint256 userInitialBalance, uint256 amountToDeposit)
         internal
         virtual
         override
@@ -91,9 +89,12 @@ contract WrapDepositRedeemTest is WrapTest {
         assertEq(wrap.exposed_depositFees(amount), 0);
     }
 
-    function _onExecuteFee(
-        uint256 amount
-    ) internal virtual override returns (uint256) {
+    function _onExecuteFee(uint256 amount)
+        internal
+        virtual
+        override
+        returns (uint256)
+    {
         return wrap.exposed_calculateFee(amount, validatorFeeBPS);
     }
 
@@ -104,9 +105,7 @@ contract WrapDepositRedeemTest is WrapTest {
         uint256
     ) internal virtual override {}
 
-    function _testOnExecute(
-        uint256 amount
-    )
+    function _testOnExecute(uint256 amount)
         internal
         virtual
         override
