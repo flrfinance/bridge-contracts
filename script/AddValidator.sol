@@ -8,11 +8,17 @@ import "../src/interfaces/IWrap.sol";
 contract AddValidator is Script {
     address constant wrap = 0x9550c9651b681Ce9FE1f3D8c416F785e6350274c;
     address constant validator = 0xBb0d20CC598E4d34A7eF50d4B55cd43850048c23;
+    address constant validatorFeeRecipient =
+        0x517C4821D3774F6DBCcB6D016BfB2FC3712048D4;
     bool isFirstCommittee = true;
 
     function run() external {
         vm.startBroadcast();
-        IWrap(wrap).addValidator(validator, isFirstCommittee, address(0));
+        IWrap(wrap).addValidator(
+            validator,
+            isFirstCommittee,
+            validatorFeeRecipient
+        );
         vm.stopBroadcast();
     }
 }
