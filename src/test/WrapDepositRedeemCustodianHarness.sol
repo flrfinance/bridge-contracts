@@ -17,13 +17,9 @@ contract WrapDepositRedeemCustodianHarness is
         address custodian
     ) WrapDepositRedeemCustodian(config, _validatorsFeeBPS, custodian) {}
 
-    function accumulatedValidatorFees(address token)
-        public
-        view
-        virtual
-        override(Wrap, WrapDepositRedeem)
-        returns (uint256)
-    {
+    function accumulatedValidatorFees(
+        address token
+    ) public view virtual override(Wrap, WrapDepositRedeem) returns (uint256) {
         return super.accumulatedValidatorFees(token);
     }
 }

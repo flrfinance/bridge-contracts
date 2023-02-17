@@ -13,13 +13,9 @@ contract WrapMintBurnHarness is WrapHarness, WrapMintBurn {
         uint16 _validatorsFeeBPS
     ) WrapMintBurn(config, _protocolFeeBPS, _validatorsFeeBPS) {}
 
-    function accumulatedValidatorFees(address token)
-        public
-        view
-        virtual
-        override(Wrap, WrapMintBurn)
-        returns (uint256)
-    {
+    function accumulatedValidatorFees(
+        address token
+    ) public view virtual override(Wrap, WrapMintBurn) returns (uint256) {
         return super.accumulatedValidatorFees(token);
     }
 }

@@ -140,11 +140,10 @@ library Multisig {
     /// @param s The relevant multisig to check.
     /// @param hash The hash of the request being checked.
     /// @return The status of the request with the given hash.
-    function status(DualMultisig storage s, bytes32 hash)
-        internal
-        view
-        returns (RequestStatus)
-    {
+    function status(
+        DualMultisig storage s,
+        bytes32 hash
+    ) internal view returns (RequestStatus) {
         return s.requests[hash].status;
     }
 
@@ -153,11 +152,10 @@ library Multisig {
     /// @param s The relevant multisig to check.
     /// @param signer The address of the potential signer.
     /// @return True if the provided address is a signer.
-    function isSigner(DualMultisig storage s, address signer)
-        internal
-        view
-        returns (bool)
-    {
+    function isSigner(
+        DualMultisig storage s,
+        address signer
+    ) internal view returns (bool) {
         return s.signers[signer].status >= SignerStatus.FirstCommittee;
     }
 
@@ -167,11 +165,10 @@ library Multisig {
     /// @param signer The address of the signer.
     /// @return The number of points accumalted by the
     /// given signer.
-    function points(DualMultisig storage s, address signer)
-        internal
-        view
-        returns (uint64)
-    {
+    function points(
+        DualMultisig storage s,
+        address signer
+    ) internal view returns (uint64) {
         SignerInfo memory signerInfo = s.signers[signer];
         if (signerInfo.status < SignerStatus.FirstCommittee) {
             revert SignerNotActive(signer);
@@ -343,10 +340,10 @@ library Multisig {
     /// @param s The multisig for which to clear the given signer's points.
     /// @param signer The address of the signer whose points to clear.
     /// @return The number of points that were cleared.
-    function clearPoints(DualMultisig storage s, address signer)
-        internal
-        returns (uint64)
-    {
+    function clearPoints(
+        DualMultisig storage s,
+        address signer
+    ) internal returns (uint64) {
         SignerInfo memory signerInfo = s.signers[signer];
         if (signerInfo.status < SignerStatus.FirstCommittee) {
             revert SignerNotActive(signer);

@@ -55,10 +55,9 @@ contract WrapMintBurnTest is WrapTest {
         assertEq(wmb.validatorFeeBPS(), validatorFeeBPS);
     }
 
-    function _testAccumulatedValidatorFees(uint256 validatorFees)
-        internal
-        override
-    {
+    function _testAccumulatedValidatorFees(
+        uint256 validatorFees
+    ) internal override {
         // TODO: Perform some actions to increase protocol fees
         uint256 accumulatedProtocolFees = wmb.accumulatedProtocolFees(token);
         vm.mockCall(
@@ -72,12 +71,10 @@ contract WrapMintBurnTest is WrapTest {
         );
     }
 
-    function _testOnDeposit(uint256 userInitialBalance, uint256 amountToDeposit)
-        internal
-        override
-        withToken
-        withMintedTokens(user, userInitialBalance)
-    {
+    function _testOnDeposit(
+        uint256 userInitialBalance,
+        uint256 amountToDeposit
+    ) internal override withToken withMintedTokens(user, userInitialBalance) {
         uint256 initialAccumulatedProtocolFees = wmb.accumulatedProtocolFees(
             token
         );
@@ -108,12 +105,9 @@ contract WrapMintBurnTest is WrapTest {
         );
     }
 
-    function _onExecuteFee(uint256 amount)
-        internal
-        view
-        override
-        returns (uint256)
-    {
+    function _onExecuteFee(
+        uint256 amount
+    ) internal view override returns (uint256) {
         return
             wrap.exposed_calculateFee(amount, protocolFeeBPS) +
             wrap.exposed_calculateFee(amount, validatorFeeBPS);
@@ -126,12 +120,9 @@ contract WrapMintBurnTest is WrapTest {
         uint256
     ) internal override {}
 
-    function _testOnExecute(uint256 amount)
-        internal
-        override
-        withToken
-        withMintedTokens(address(wrap), amount)
-    {
+    function _testOnExecute(
+        uint256 amount
+    ) internal override withToken withMintedTokens(address(wrap), amount) {
         uint256 initialAccumulatedProtocolFees = wmb.accumulatedProtocolFees(
             token
         );
@@ -307,7 +298,9 @@ contract WrapMintBurnTest is WrapTest {
         );
     }
 
-    function _testDepositUpdatesAccumulatedProtocolFees(uint256 amount)
+    function _testDepositUpdatesAccumulatedProtocolFees(
+        uint256 amount
+    )
         internal
         withMintedTokens(user, amount)
         updatesAccumulatedProtocolFees(amount)
@@ -326,10 +319,9 @@ contract WrapMintBurnTest is WrapTest {
         _testDepositUpdatesAccumulatedProtocolFees(tokenInfo.maxAmount - 1);
     }
 
-    function testDepositUpdatesAccumulatedProtocolFees(uint256 amount)
-        public
-        withToken
-    {
+    function testDepositUpdatesAccumulatedProtocolFees(
+        uint256 amount
+    ) public withToken {
         vm.assume(
             amount >=
                 tokenInfo.minAmount +
@@ -340,7 +332,9 @@ contract WrapMintBurnTest is WrapTest {
         _testDepositUpdatesAccumulatedProtocolFees(amount);
     }
 
-    function _testApproveExecuteUpdatesAccumulatedProtocolFees(uint256 amount)
+    function _testApproveExecuteUpdatesAccumulatedProtocolFees(
+        uint256 amount
+    )
         internal
         withMintedTokens(user, amount)
         updatesAccumulatedProtocolFees(amount)
@@ -368,11 +362,9 @@ contract WrapMintBurnTest is WrapTest {
         );
     }
 
-    function testApproveExecuteUpdatesAccumulatedProtocolFees(uint256 amount)
-        public
-        withToken
-        withValidators
-    {
+    function testApproveExecuteUpdatesAccumulatedProtocolFees(
+        uint256 amount
+    ) public withToken withValidators {
         vm.assume(amount >= tokenInfo.minAmount);
 
         vm.assume(amount < tokenInfo.maxAmount);
