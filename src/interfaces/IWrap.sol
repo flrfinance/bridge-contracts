@@ -121,17 +121,18 @@ interface IWrap is IAccessControlEnumerable {
     /// @param token Address of the token for which to check its
     /// corresponding accumulated validator fees.
     /// @return balance Total accumulated fees for the given token.
-    function accumulatedValidatorFees(address token)
-        external
-        view
-        returns (uint256 balance);
+    function accumulatedValidatorFees(
+        address token
+    ) external view returns (uint256 balance);
 
     /// @dev Update a token's configuration information.
     /// @param tokenInfo The token's new configuration info.
     /// @notice Set maxAmount to zero to disable the token.
     /// @notice Can only be called by the owner.
-    function configureToken(address token, TokenInfo calldata tokenInfo)
-        external;
+    function configureToken(
+        address token,
+        TokenInfo calldata tokenInfo
+    ) external;
 
     /// @dev Set the multisig configuration.
     /// @param config Multisig config.
@@ -195,8 +196,10 @@ interface IWrap is IAccessControlEnumerable {
     /// @dev Change fee recipient for a validator.
     /// @param validator Address of the validator.
     /// @param feeRecipient Address of the new fee recipient.
-    function changeFeeRecipient(address validator, address feeRecipient)
-        external;
+    function configureValidatorFeeRecipient(
+        address validator,
+        address feeRecipient
+    ) external;
 
     /// @dev Remove existing validator from the contract.
     /// @param validator Address of the validator.

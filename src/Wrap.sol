@@ -303,7 +303,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     }
 
     /// @inheritdoc IWrap
-    function changeFeeRecipient(
+    function configureValidatorFeeRecipient(
         address validator,
         address feeRecipient
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
