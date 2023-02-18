@@ -9,10 +9,9 @@ interface IWrapMintBurn is IWrap {
     /// @param token Address of the token for which to check its
     /// corresponding accumulated protocol fees.
     /// @return balance Total accumulated protocol fees for the given token.
-    function accumulatedProtocolFees(address token)
-        external
-        view
-        returns (uint256 balance);
+    function accumulatedProtocolFees(
+        address token
+    ) external view returns (uint256 balance);
 
     /// @dev Returns the protocol fee basis points.
     function protocolFeeBPS() external view returns (uint16);

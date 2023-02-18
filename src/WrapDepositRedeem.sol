@@ -16,18 +16,15 @@ contract WrapDepositRedeem is IWrapDepositRedeem, Wrap {
 
     using SafeERC20 for IERC20;
 
-    constructor(Multisig.Config memory config, uint16 _validatorFeeBPS)
-        Wrap(config, _validatorFeeBPS)
-    {}
+    constructor(
+        Multisig.Config memory config,
+        uint16 _validatorFeeBPS
+    ) Wrap(config, _validatorFeeBPS) {}
 
     /// @inheritdoc IWrap
-    function accumulatedValidatorFees(address token)
-        public
-        view
-        virtual
-        override(IWrap, Wrap)
-        returns (uint256)
-    {
+    function accumulatedValidatorFees(
+        address token
+    ) public view virtual override(IWrap, Wrap) returns (uint256) {
         return IERC20(token).balanceOf(address(this));
     }
 
@@ -37,12 +34,10 @@ contract WrapDepositRedeem is IWrapDepositRedeem, Wrap {
     }
 
     /// @inheritdoc Wrap
-    function onDeposit(address token, uint256 amount)
-        internal
-        virtual
-        override
-        returns (uint256)
-    {
+    function onDeposit(
+        address token,
+        uint256 amount
+    ) internal virtual override returns (uint256) {
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
         return depositFees(amount);
     }

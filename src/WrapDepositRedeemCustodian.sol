@@ -25,11 +25,10 @@ contract WrapDepositRedeemCustodian is WrapDepositRedeem {
     }
 
     /// @inheritdoc WrapDepositRedeem
-    function onDeposit(address token, uint256 amount)
-        internal
-        override
-        returns (uint256)
-    {
+    function onDeposit(
+        address token,
+        uint256 amount
+    ) internal override returns (uint256) {
         IERC20(token).safeTransferFrom(msg.sender, custodian, amount);
         return depositFees(amount);
     }

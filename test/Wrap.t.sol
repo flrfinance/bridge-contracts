@@ -30,8 +30,12 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
     IWrap.TokenInfo tokenInfo;
 
     address validator;
+    address validatorFeeRecipient;
+
     address validatorA;
+    address validatorAFeeRecipient;
     address validatorB;
+    address validatorBFeeRecipient;
 
     event Deposit(
         uint256 indexed id,
@@ -78,7 +82,8 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         vm.prank(admin);
         wrap.addValidator(
             validator,
-            committee == Committee.First ? true : false
+            committee == Committee.First ? true : false,
+            validatorFeeRecipient
         );
     }
 
@@ -97,8 +102,8 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
     // TODO: Add >2 validators
     modifier withValidators() {
         vm.startPrank(admin);
-        wrap.addValidator(validatorA, true);
-        wrap.addValidator(validatorB, false);
+        wrap.addValidator(validatorA, true, validatorAFeeRecipient);
+        wrap.addValidator(validatorB, false, validatorBFeeRecipient);
         vm.stopPrank();
         _;
     }
@@ -182,8 +187,12 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
 
         tokenInfo = IWrap.TokenInfo({ maxAmount: 10_000, minAmount: 100 });
         validator = signer;
+        validatorFeeRecipient = address(1);
+
         validatorA = signerA;
+        validatorAFeeRecipient = address(2);
         validatorB = signerB;
+        validatorBFeeRecipient = address(3);
     }
 
     function testConstructorSetupRole() public {
@@ -314,6 +323,48 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         virtual
         returns (uint256);
 
+    function testConfigureValidatorFeeRecipient()
+        public
+        withToken
+        withValidators
+    {
+        address newValidatorAFeeRecipient = address(4242);
+        vm.prank(admin);
+        wrap.configureValidatorFeeRecipient(
+            validatorA,
+            newValidatorAFeeRecipient
+        );
+        assertEq(
+            wrap.validatorFeeRecipients(validatorA),
+            newValidatorAFeeRecipient
+        );
+
+        address newValidatorBFeeRecipient = address(1717);
+        vm.prank(admin);
+        wrap.configureValidatorFeeRecipient(
+            validatorB,
+            newValidatorBFeeRecipient
+        );
+        assertEq(
+            wrap.validatorFeeRecipients(validatorB),
+            newValidatorBFeeRecipient
+        );
+    }
+
+    function testConfigureValidatorFeeRecipientIfCallerIsNotAdmin()
+        public
+        withToken
+        withValidators
+    {
+        vm.prank(user);
+        _expectMissingRoleRevert(user, DEFAULT_ADMIN_ROLE);
+        wrap.configureValidatorFeeRecipient(validatorA, address(4242));
+
+        vm.prank(user);
+        _expectMissingRoleRevert(user, DEFAULT_ADMIN_ROLE);
+        wrap.configureValidatorFeeRecipient(validatorB, address(1717));
+    }
+
     function testClaimValidatorFees() public withToken withValidators {
         uint256 expectedValidatorAPoints = wrap.exposed_multisigPoints(
             validatorA
@@ -337,8 +388,12 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
 
         _executeDeposit(4000, user); // should not affect validator fees
 
-        uint256 initialValidatorABalance = IERC20(token).balanceOf(validatorA);
-        uint256 initialValidatorBBalance = IERC20(token).balanceOf(validatorB);
+        uint256 initialValidatorABalance = IERC20(token).balanceOf(
+            validatorAFeeRecipient
+        );
+        uint256 initialValidatorBBalance = IERC20(token).balanceOf(
+            validatorBFeeRecipient
+        );
         uint256 initialCustodianBalance = IERC20(token).balanceOf(_custodian());
 
         uint256 accumulatedValidatorFees = _accumulatedValidatorFees();
@@ -359,10 +414,14 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         uint256 expectedValidatorAFees = (accumulatedValidatorFees *
             expectedValidatorAPoints) / expectedTotalPoints;
 
-        vm.prank(validatorA);
+        vm.prank(user);
         vm.expectEmit(true, true, true, true, token);
-        emit Transfer(address(wrap), validatorA, expectedValidatorAFees);
-        wrap.claimValidatorFees();
+        emit Transfer(
+            address(wrap),
+            validatorAFeeRecipient,
+            expectedValidatorAFees
+        );
+        wrap.claimValidatorFees(validatorA);
 
         assertEq(wrap.exposed_multisigPoints(validatorA), 0);
         assertEq(
@@ -378,21 +437,25 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
             expectedValidatorAFees) * expectedValidatorBPoints) /
             (expectedTotalPoints - expectedValidatorAPoints);
 
-        vm.prank(validatorB);
+        vm.prank(user);
         vm.expectEmit(true, true, true, true, token);
-        emit Transfer(address(wrap), validatorB, expectedValidatorBFees);
-        wrap.claimValidatorFees();
+        emit Transfer(
+            address(wrap),
+            validatorBFeeRecipient,
+            expectedValidatorBFees
+        );
+        wrap.claimValidatorFees(validatorB);
 
         assertEq(wrap.exposed_multisigPoints(validatorA), 0);
         assertEq(wrap.exposed_multisigPoints(validatorB), 0);
         assertEq(wrap.exposed_multisigTotalPoints(), 0);
 
         assertEq(
-            IERC20(token).balanceOf(validatorA),
+            IERC20(token).balanceOf(validatorAFeeRecipient),
             initialValidatorABalance + expectedValidatorAFees
         );
         assertEq(
-            IERC20(token).balanceOf(validatorB),
+            IERC20(token).balanceOf(validatorBFeeRecipient),
             initialValidatorBBalance + expectedValidatorBFees
         );
         assertEq(
@@ -1048,7 +1111,11 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         uint8 initialSecondCommitteeSize = wrap
             .exposed_multisigSecondCommitteeSize();
         vm.prank(admin);
-        wrap.addValidator(validator, committee == Committee.First);
+        wrap.addValidator(
+            validator,
+            committee == Committee.First,
+            validatorFeeRecipient
+        );
         Multisig.SignerInfo memory validatorInfo = wrap
             .exposed_multisigSignerInfo(validator);
         _assertEq(
@@ -1077,6 +1144,8 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
                 ? initialSecondCommitteeSize
                 : initialSecondCommitteeSize + 1
         );
+
+        assertEq(wrap.validatorFeeRecipients(validator), validatorFeeRecipient);
     }
 
     function testAddValidatorToFirstCommittee() public {
@@ -1092,7 +1161,7 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
     {
         vm.prank(user);
         _expectMissingRoleRevert(user, DEFAULT_ADMIN_ROLE);
-        wrap.addValidator(validator, true);
+        wrap.addValidator(validator, true, validatorFeeRecipient);
     }
 
     function testAddValidatorToSecondCommitteeRevertsIfCallerIsNotAdmin()
@@ -1100,7 +1169,7 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
     {
         vm.prank(user);
         _expectMissingRoleRevert(user, DEFAULT_ADMIN_ROLE);
-        wrap.addValidator(validator, false);
+        wrap.addValidator(validator, false, validatorFeeRecipient);
     }
 
     function _testRemoveValidator(
