@@ -164,11 +164,17 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         uint256 id,
         address mirrorToken,
         uint256 amount,
-        address to
+        address to,
+        bytes32 recentBlockhash,
+        uint256 recentBlocknumber
     ) public isNotPaused isValidMirrorTokenAmount(mirrorToken, amount) {
         // If the request ID is lower than the last executed ID then simply ignore the request.
         if (id < multisig.nextExecutionIndex) {
             return;
+        }
+
+        if (blockhash(recentBlocknumber) != recentBlockhash) {
+            revert InvalidBlockhash();
         }
 
         bytes32 hash = hashRequest(id, mirrorToken, amount, to);
@@ -189,13 +195,19 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     }
 
     /// @inheritdoc IWrap
-    function batchApproveExecute(RequestInfo[] calldata requests) external {
+    function batchApproveExecute(
+        RequestInfo[] calldata requests,
+        bytes32 recentBlockhash,
+        uint256 recentBlocknumber
+    ) external {
         for (uint256 i = 0; i < requests.length; i++) {
             approveExecute(
                 requests[i].id,
                 requests[i].token,
                 requests[i].amount,
-                requests[i].to
+                requests[i].to,
+                recentBlockhash,
+                recentBlocknumber
             );
         }
     }

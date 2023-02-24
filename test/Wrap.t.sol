@@ -158,9 +158,23 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         requestId = wrap.nextExecutionIndex();
         uint256 fee = _onExecuteFee(amount);
         vm.prank(validatorA);
-        wrap.approveExecute(requestId, mirrorToken, amount, recipient);
+        wrap.approveExecute(
+            requestId,
+            mirrorToken,
+            amount,
+            recipient,
+            blockhash(block.number),
+            block.number
+        );
         vm.prank(validatorB);
-        wrap.approveExecute(requestId, mirrorToken, amount, recipient);
+        wrap.approveExecute(
+            requestId,
+            mirrorToken,
+            amount,
+            recipient,
+            blockhash(block.number),
+            block.number
+        );
         _onExecutePerformExternalAction(token, amount, user, fee);
     }
 
@@ -703,7 +717,14 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         vm.prank(validatorA);
         vm.expectEmit(true, true, true, true);
         emit Requested(requestId, mirrorToken, amount, user);
-        wrap.approveExecute(requestId, mirrorToken, amount, user);
+        wrap.approveExecute(
+            requestId,
+            mirrorToken,
+            amount,
+            user,
+            blockhash(block.number),
+            block.number
+        );
 
         assertEq(IERC20(token).balanceOf(user), initialRecipientBalance);
         assertEq(
@@ -718,7 +739,14 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         _expectApproveExecuteFinalEvents(requestId, token, amount, user, fee);
 
         vm.prank(validatorB);
-        wrap.approveExecute(requestId, mirrorToken, amount, user);
+        wrap.approveExecute(
+            requestId,
+            mirrorToken,
+            amount,
+            user,
+            blockhash(block.number),
+            block.number
+        );
 
         assertEq(
             IERC20(token).balanceOf(user),
@@ -756,7 +784,14 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         uint256 requestId = initialNextExecutionIndex;
         vm.prank(validatorA);
         vm.expectRevert(IWrap.ContractPaused.selector);
-        wrap.approveExecute(requestId, mirrorToken, amount, user);
+        wrap.approveExecute(
+            requestId,
+            mirrorToken,
+            amount,
+            user,
+            blockhash(block.number),
+            block.number
+        );
     }
 
     function testApproveExecuteRevertsIfContractsPaused()
@@ -787,7 +822,14 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         uint256 requestId = initialNextExecutionIndex;
         vm.prank(validatorA);
         vm.expectRevert(IWrap.InvalidTokenAmount.selector);
-        wrap.approveExecute(requestId, mirrorToken, amount, user);
+        wrap.approveExecute(
+            requestId,
+            mirrorToken,
+            amount,
+            user,
+            blockhash(block.number),
+            block.number
+        );
     }
 
     function testApproveExecuteRevertsIfAmountIsLessThanMinAmount()
@@ -867,7 +909,11 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         }
 
         vm.prank(validatorA);
-        wrap.batchApproveExecute(requests);
+        wrap.batchApproveExecute(
+            requests,
+            blockhash(block.number),
+            block.number
+        );
 
         assertEq(IERC20(token).balanceOf(user), initialRecipientBalance);
 
@@ -886,7 +932,11 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         }
 
         vm.prank(validatorB);
-        wrap.batchApproveExecute(requests);
+        wrap.batchApproveExecute(
+            requests,
+            blockhash(block.number),
+            block.number
+        );
 
         _expectApproveExecuteFinalCustodianBalance(
             initialCustodianBalance,
