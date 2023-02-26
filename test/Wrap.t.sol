@@ -777,104 +777,104 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         _testApproveExecute(amount);
     }
 
-    function _testApproveExecuteRevertsIfBlockhashIsInvalid(
+    function _testApproveExecuteRevertsIfBlockHashIsInvalid(
         uint256 amount,
-        bytes32 recentBlockhash,
-        uint256 recentBlocknumber
+        bytes32 recentBlockHash,
+        uint256 recentBlockNumber
     ) internal withMintedTokens(user, amount) {
         uint256 initialNextExecutionIndex = wrap.nextExecutionIndex();
         uint256 requestId = initialNextExecutionIndex;
         vm.prank(validatorA);
-        vm.expectRevert(IWrap.InvalidBlockhash.selector);
+        vm.expectRevert(IWrap.InvalidBlockHash.selector);
         wrap.approveExecute(
             requestId,
             mirrorToken,
             amount,
             user,
-            recentBlockhash,
-            recentBlocknumber
+            recentBlockHash,
+            recentBlockNumber
         );
     }
 
-    function _testApproveExecuteRevertsIfBlockhashDoesNotMatchBlocknumber(
+    function _testApproveExecuteRevertsIfBlockHashDoesNotMatchBlockNumber(
         uint256 amount
     ) internal {
-        _testApproveExecuteRevertsIfBlockhashIsInvalid(
+        _testApproveExecuteRevertsIfBlockHashIsInvalid(
             amount,
             blockhash(block.number),
             block.number - 1
         );
     }
 
-    function testApproveExecuteRevertsIfBlockhashDoesNotMatchBlocknumber()
+    function testApproveExecuteRevertsIfBlockHashDoesNotMatchBlockNumber()
         public
         withToken
         withValidators
     {
-        _testApproveExecuteRevertsIfBlockhashDoesNotMatchBlocknumber(
+        _testApproveExecuteRevertsIfBlockHashDoesNotMatchBlockNumber(
             tokenInfo.minAmount
         );
-        _testApproveExecuteRevertsIfBlockhashDoesNotMatchBlocknumber(
+        _testApproveExecuteRevertsIfBlockHashDoesNotMatchBlockNumber(
             tokenInfo.minAmount + 1
         );
-        _testApproveExecuteRevertsIfBlockhashDoesNotMatchBlocknumber(
+        _testApproveExecuteRevertsIfBlockHashDoesNotMatchBlockNumber(
             tokenInfo.minAmount + 2
         );
-        _testApproveExecuteRevertsIfBlockhashDoesNotMatchBlocknumber(
+        _testApproveExecuteRevertsIfBlockHashDoesNotMatchBlockNumber(
             tokenInfo.maxAmount - 2
         );
-        _testApproveExecuteRevertsIfBlockhashDoesNotMatchBlocknumber(
+        _testApproveExecuteRevertsIfBlockHashDoesNotMatchBlockNumber(
             tokenInfo.maxAmount - 1
         );
     }
 
-    function testApproveExecuteRevertsIfBlockhashDoesNotMatchBlocknumber(
+    function testApproveExecuteRevertsIfBlockHashDoesNotMatchBlockNumber(
         uint256 amount,
-        bytes32 recentBlockhash,
-        uint256 recentBlocknumber
+        bytes32 recentBlockHash,
+        uint256 recentBlockNumber
     ) public withToken withValidators {
         vm.assume(amount > tokenInfo.minAmount);
         vm.assume(amount < tokenInfo.maxAmount);
-        vm.assume(blockhash(recentBlocknumber) != recentBlockhash);
-        _testApproveExecuteRevertsIfBlockhashIsInvalid(
+        vm.assume(blockhash(recentBlockNumber) != recentBlockHash);
+        _testApproveExecuteRevertsIfBlockHashIsInvalid(
             amount,
-            recentBlockhash,
-            recentBlocknumber
+            recentBlockHash,
+            recentBlockNumber
         );
     }
 
-    function _testApproveExecuteRevertsIfBlocknumberIsOld(
+    function _testApproveExecuteRevertsIfBlockNumberIsOld(
         uint256 amount
     ) internal {
         vm.roll(1337);
-        uint256 recentBlocknumber = block.number - 1;
-        bytes32 recentBlockhash = blockhash(recentBlocknumber);
-        vm.roll(recentBlocknumber + 256 + 1);
-        _testApproveExecuteRevertsIfBlockhashIsInvalid(
+        uint256 recentBlockNumber = block.number - 1;
+        bytes32 recentBlockHash = blockhash(recentBlockNumber);
+        vm.roll(recentBlockNumber + 256 + 1);
+        _testApproveExecuteRevertsIfBlockHashIsInvalid(
             amount,
-            recentBlockhash,
-            recentBlocknumber
+            recentBlockHash,
+            recentBlockNumber
         );
     }
 
-    function testApproveExecuteRevertsIfBlocknumberIsOld()
+    function testApproveExecuteRevertsIfBlockNumberIsOld()
         public
         withToken
         withValidators
     {
-        _testApproveExecuteRevertsIfBlocknumberIsOld(tokenInfo.minAmount);
-        _testApproveExecuteRevertsIfBlocknumberIsOld(tokenInfo.minAmount + 1);
-        _testApproveExecuteRevertsIfBlocknumberIsOld(tokenInfo.minAmount + 2);
-        _testApproveExecuteRevertsIfBlocknumberIsOld(tokenInfo.maxAmount - 2);
-        _testApproveExecuteRevertsIfBlocknumberIsOld(tokenInfo.maxAmount - 1);
+        _testApproveExecuteRevertsIfBlockNumberIsOld(tokenInfo.minAmount);
+        _testApproveExecuteRevertsIfBlockNumberIsOld(tokenInfo.minAmount + 1);
+        _testApproveExecuteRevertsIfBlockNumberIsOld(tokenInfo.minAmount + 2);
+        _testApproveExecuteRevertsIfBlockNumberIsOld(tokenInfo.maxAmount - 2);
+        _testApproveExecuteRevertsIfBlockNumberIsOld(tokenInfo.maxAmount - 1);
     }
 
-    function testApproveExecuteRevertsIfBlocknumberIsOld(
+    function testApproveExecuteRevertsIfBlockNumberIsOld(
         uint256 amount
     ) public withToken withValidators {
         vm.assume(amount > tokenInfo.minAmount);
         vm.assume(amount < tokenInfo.maxAmount);
-        _testApproveExecuteRevertsIfBlocknumberIsOld(amount);
+        _testApproveExecuteRevertsIfBlockNumberIsOld(amount);
     }
 
     function _testApproveExecuteRevertsIfContractsPaused(

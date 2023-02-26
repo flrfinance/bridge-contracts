@@ -30,7 +30,7 @@ interface IWrap is IAccessControlEnumerable {
     error InvalidToAddress();
 
     /// @dev Thrown when the provided blocknumber is not of the most recent 256 blocks.
-    error InvalidBlockhash();
+    error InvalidBlockHash();
 
     /// @dev Emitted when a user deposits.
     /// @param id ID associated with the request.
