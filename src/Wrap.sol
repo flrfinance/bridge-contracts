@@ -175,7 +175,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
 
         // Prevent malicious validators from pre-producing attestation signatures.
         if (
-            recentBlockHash != bytes32(0) ||
+            recentBlockHash == bytes32(0) ||
             blockhash(recentBlockNumber) != recentBlockHash
         ) {
             revert InvalidBlockHash();
