@@ -117,6 +117,22 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         _;
     }
 
+    /// @dev Modifier to make a function callable only when the recent block hash is valid.
+    modifier withValidRecentBlockHash(
+        bytes32 recentBlockHash,
+        uint256 recentBlockNumber
+    ) {
+        // Prevent malicious validators from pre-producing attestation signatures.
+        // `blockhash(recentBlockNumber)` yields `0x0` when `recentBlockNumber < block.number - 256`.
+        if (
+            recentBlockHash == bytes32(0) ||
+            blockhash(recentBlockNumber) != recentBlockHash
+        ) {
+            revert InvalidBlockHash();
+        }
+        _;
+    }
+
     /// @inheritdoc IWrap
     function nextExecutionIndex() external view returns (uint256) {
         return multisig.nextExecutionIndex;
@@ -196,16 +212,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         address to,
         bytes32 recentBlockHash,
         uint256 recentBlockNumber
-    ) public {
-        // Prevent malicious validators from pre-producing attestation signatures.
-        // `blockhash(recentBlockNumber)` yields `0x0` when `recentBlockNumber < block.number - 256`.
-        if (
-            recentBlockHash == bytes32(0) ||
-            blockhash(recentBlockNumber) != recentBlockHash
-        ) {
-            revert InvalidBlockHash();
-        }
-
+    ) public withValidRecentBlockHash(recentBlockHash, recentBlockNumber) {
         _approveExecute(id, mirrorToken, amount, to);
     }
 
@@ -214,16 +221,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         RequestInfo[] calldata requests,
         bytes32 recentBlockHash,
         uint256 recentBlockNumber
-    ) external {
-        // Prevent malicious validators from pre-producing attestation signatures.
-        // `blockhash(recentBlockNumber)` yields `0x0` when `recentBlockNumber < block.number - 256`.
-        if (
-            recentBlockHash == bytes32(0) ||
-            blockhash(recentBlockNumber) != recentBlockHash
-        ) {
-            revert InvalidBlockHash();
-        }
-
+    ) external withValidRecentBlockHash(recentBlockHash, recentBlockNumber) {
         for (uint256 i = 0; i < requests.length; i++) {
             _approveExecute(
                 requests[i].id,
