@@ -1,4 +1,4 @@
-# FLR Wraps
+# FLRWrap
 
 > A mint/burn bridge from EVM compatible chains to the Flare Network.
 
