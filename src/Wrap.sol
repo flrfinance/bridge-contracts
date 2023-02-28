@@ -159,27 +159,16 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         return keccak256(abi.encodePacked(id, token, amount, to));
     }
 
-    /// @inheritdoc IWrap
-    function approveExecute(
+    /// @dev Internal function to approve and/or execute a given request.
+    function _approveExecute(
         uint256 id,
         address mirrorToken,
         uint256 amount,
-        address to,
-        bytes32 recentBlockHash,
-        uint256 recentBlockNumber
+        address to
     ) public isNotPaused isValidMirrorTokenAmount(mirrorToken, amount) {
         // If the request ID is lower than the last executed ID then simply ignore the request.
         if (id < multisig.nextExecutionIndex) {
             return;
-        }
-
-        // Prevent malicious validators from pre-producing attestation signatures.
-        // `blockhash(recentBlockNumber)` yields `0x0` when `recentBlockNumber < block.number - 256`.
-        if (
-            recentBlockHash == bytes32(0) ||
-            blockhash(recentBlockNumber) != recentBlockHash
-        ) {
-            revert InvalidBlockHash();
         }
 
         bytes32 hash = hashRequest(id, mirrorToken, amount, to);
@@ -200,19 +189,47 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     }
 
     /// @inheritdoc IWrap
+    function approveExecute(
+        uint256 id,
+        address mirrorToken,
+        uint256 amount,
+        address to,
+        bytes32 recentBlockHash,
+        uint256 recentBlockNumber
+    ) public {
+        // Prevent malicious validators from pre-producing attestation signatures.
+        // `blockhash(recentBlockNumber)` yields `0x0` when `recentBlockNumber < block.number - 256`.
+        if (
+            recentBlockHash == bytes32(0) ||
+            blockhash(recentBlockNumber) != recentBlockHash
+        ) {
+            revert InvalidBlockHash();
+        }
+
+        _approveExecute(id, mirrorToken, amount, to);
+    }
+
+    /// @inheritdoc IWrap
     function batchApproveExecute(
         RequestInfo[] calldata requests,
         bytes32 recentBlockHash,
         uint256 recentBlockNumber
     ) external {
+        // Prevent malicious validators from pre-producing attestation signatures.
+        // `blockhash(recentBlockNumber)` yields `0x0` when `recentBlockNumber < block.number - 256`.
+        if (
+            recentBlockHash == bytes32(0) ||
+            blockhash(recentBlockNumber) != recentBlockHash
+        ) {
+            revert InvalidBlockHash();
+        }
+
         for (uint256 i = 0; i < requests.length; i++) {
-            approveExecute(
+            _approveExecute(
                 requests[i].id,
                 requests[i].token,
                 requests[i].amount,
-                requests[i].to,
-                recentBlockHash,
-                recentBlockNumber
+                requests[i].to
             );
         }
     }
