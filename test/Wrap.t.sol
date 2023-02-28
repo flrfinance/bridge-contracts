@@ -163,8 +163,8 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
             mirrorToken,
             amount,
             recipient,
-            blockhash(block.number),
-            block.number
+            blockhash(block.number - 1),
+            block.number - 1
         );
         vm.prank(validatorB);
         wrap.approveExecute(
@@ -172,8 +172,8 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
             mirrorToken,
             amount,
             recipient,
-            blockhash(block.number),
-            block.number
+            blockhash(block.number - 1),
+            block.number - 1
         );
         _onExecutePerformExternalAction(token, amount, user, fee);
     }
@@ -207,6 +207,10 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         validatorAFeeRecipient = address(2);
         validatorB = signerB;
         validatorBFeeRecipient = address(3);
+
+        // You cannot `approveExecute` on genesis because
+        // you need a previous block to exist
+        vm.roll(2);
     }
 
     function testConstructorSetupRole() public {
@@ -722,8 +726,8 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
             mirrorToken,
             amount,
             user,
-            blockhash(block.number),
-            block.number
+            blockhash(block.number - 1),
+            block.number - 1
         );
 
         assertEq(IERC20(token).balanceOf(user), initialRecipientBalance);
@@ -744,8 +748,8 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
             mirrorToken,
             amount,
             user,
-            blockhash(block.number),
-            block.number
+            blockhash(block.number - 1),
+            block.number - 1
         );
 
         assertEq(
@@ -801,8 +805,8 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
     ) internal {
         _testApproveExecuteRevertsIfBlockHashIsInvalid(
             amount,
-            blockhash(block.number),
-            block.number - 1
+            blockhash(block.number - 1),
+            block.number - 2
         );
     }
 
@@ -843,10 +847,61 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         );
     }
 
+    function _testApproveExecuteRevertsIfBlockHashIsZero(
+        uint256 amount,
+        uint256 recentBlockNumber
+    ) internal {
+        _testApproveExecuteRevertsIfBlockHashIsInvalid(
+            amount,
+            bytes32(0),
+            recentBlockNumber
+        );
+    }
+
+    function testApproveExecuteRevertsIfBlockHashIsZero()
+        public
+        withToken
+        withValidators
+    {
+        uint256 recentBlockNumber = block.number - 1;
+        _testApproveExecuteRevertsIfBlockHashIsZero(
+            tokenInfo.minAmount,
+            recentBlockNumber
+        );
+        _testApproveExecuteRevertsIfBlockHashIsZero(
+            tokenInfo.minAmount + 1,
+            recentBlockNumber
+        );
+        _testApproveExecuteRevertsIfBlockHashIsZero(
+            tokenInfo.minAmount + 2,
+            recentBlockNumber
+        );
+        _testApproveExecuteRevertsIfBlockHashIsZero(
+            tokenInfo.maxAmount - 2,
+            recentBlockNumber
+        );
+        _testApproveExecuteRevertsIfBlockHashIsZero(
+            tokenInfo.maxAmount - 1,
+            recentBlockNumber
+        );
+    }
+
+    function testApproveExecuteRevertsIfBlockHashIsZero(
+        uint256 amount,
+        uint256 recentBlockNumber
+    ) public withToken withValidators {
+        vm.assume(amount > tokenInfo.minAmount);
+        vm.assume(amount < tokenInfo.maxAmount);
+        _testApproveExecuteRevertsIfBlockHashIsInvalid(
+            amount,
+            bytes32(0),
+            recentBlockNumber
+        );
+    }
+
     function _testApproveExecuteRevertsIfBlockNumberIsOld(
         uint256 amount
     ) internal {
-        vm.roll(1337);
         uint256 recentBlockNumber = block.number - 1;
         bytes32 recentBlockHash = blockhash(recentBlockNumber);
         vm.roll(recentBlockNumber + 256 + 1);
@@ -877,6 +932,48 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         _testApproveExecuteRevertsIfBlockNumberIsOld(amount);
     }
 
+    function _testApproveExecuteRevertsIfBlockNumberIsOldAndBlockHashIsZero(
+        uint256 amount
+    ) internal {
+        uint256 recentBlockNumber = block.number - 1;
+        vm.roll(recentBlockNumber + 256 + 1);
+        _testApproveExecuteRevertsIfBlockHashIsInvalid(
+            amount,
+            bytes32(0),
+            recentBlockNumber
+        );
+    }
+
+    function testApproveExecuteRevertsIfBlockNumberIsOldAndBlockHashIsZero()
+        public
+        withToken
+        withValidators
+    {
+        _testApproveExecuteRevertsIfBlockNumberIsOldAndBlockHashIsZero(
+            tokenInfo.minAmount
+        );
+        _testApproveExecuteRevertsIfBlockNumberIsOldAndBlockHashIsZero(
+            tokenInfo.minAmount + 1
+        );
+        _testApproveExecuteRevertsIfBlockNumberIsOldAndBlockHashIsZero(
+            tokenInfo.minAmount + 2
+        );
+        _testApproveExecuteRevertsIfBlockNumberIsOldAndBlockHashIsZero(
+            tokenInfo.maxAmount - 2
+        );
+        _testApproveExecuteRevertsIfBlockNumberIsOldAndBlockHashIsZero(
+            tokenInfo.maxAmount - 1
+        );
+    }
+
+    function testApproveExecuteRevertsIfBlockNumberIsOldAndBlockHashIsZero(
+        uint256 amount
+    ) public withToken withValidators {
+        vm.assume(amount > tokenInfo.minAmount);
+        vm.assume(amount < tokenInfo.maxAmount);
+        _testApproveExecuteRevertsIfBlockNumberIsOldAndBlockHashIsZero(amount);
+    }
+
     function _testApproveExecuteRevertsIfContractsPaused(
         uint256 amount
     ) internal withMintedTokens(user, amount) {
@@ -889,8 +986,8 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
             mirrorToken,
             amount,
             user,
-            blockhash(block.number),
-            block.number
+            blockhash(block.number - 1),
+            block.number - 1
         );
     }
 
@@ -927,8 +1024,8 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
             mirrorToken,
             amount,
             user,
-            blockhash(block.number),
-            block.number
+            blockhash(block.number - 1),
+            block.number - 1
         );
     }
 
@@ -1011,8 +1108,8 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         vm.prank(validatorA);
         wrap.batchApproveExecute(
             requests,
-            blockhash(block.number),
-            block.number
+            blockhash(block.number - 1),
+            block.number - 1
         );
 
         assertEq(IERC20(token).balanceOf(user), initialRecipientBalance);
@@ -1034,8 +1131,8 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         vm.prank(validatorB);
         wrap.batchApproveExecute(
             requests,
-            blockhash(block.number),
-            block.number
+            blockhash(block.number - 1),
+            block.number - 1
         );
 
         _expectApproveExecuteFinalCustodianBalance(
