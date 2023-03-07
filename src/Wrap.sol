@@ -87,13 +87,6 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         address to
     ) internal virtual returns (uint256 fee);
 
-    /// @inheritdoc IWrap
-    function accumulatedValidatorFees(address token)
-        public
-        view
-        virtual
-        returns (uint256 balance);
-
     /// @dev Modifier to make a function callable only when the contract is not paused.
     modifier isNotPaused() {
         if (paused == true) {

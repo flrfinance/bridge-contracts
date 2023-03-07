@@ -31,27 +31,22 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
         configureProtocolFees(_protocolFeeBPS);
     }
 
-    /// @inheritdoc IWrap
-    function accumulatedValidatorFees(
-        address token
-    ) public view virtual override(IWrap, Wrap) returns (uint256) {
-        return
-            IERC20MintBurn(token).balanceOf(address(this)) -
-            accumulatedProtocolFees[token];
-    }
-
     /// @inheritdoc Wrap
-    function depositFees(
-        uint256 amount
-    ) internal view override returns (uint256 fee) {
+    function depositFees(uint256 amount)
+        internal
+        view
+        override
+        returns (uint256 fee)
+    {
         fee = calculateFee(amount, protocolFeeBPS);
     }
 
     /// @inheritdoc Wrap
-    function onDeposit(
-        address token,
-        uint256 amount
-    ) internal override returns (uint256 fee) {
+    function onDeposit(address token, uint256 amount)
+        internal
+        override
+        returns (uint256 fee)
+    {
         fee = depositFees(amount);
         accumulatedProtocolFees[token] += fee;
 
@@ -74,9 +69,10 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
     }
 
     /// @inheritdoc IWrapMintBurn
-    function configureProtocolFees(
-        uint16 _protocolFeeBPS
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function configureProtocolFees(uint16 _protocolFeeBPS)
+        public
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         if (_protocolFeeBPS > maxFeeBPS) {
             revert FeeExceedsMaxFee();
         }
@@ -108,9 +104,10 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
     }
 
     /// @inheritdoc IWrapMintBurn
-    function claimProtocolFees(
-        address token
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function claimProtocolFees(address token)
+        public
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         uint256 protocolFee = accumulatedProtocolFees[token];
         accumulatedProtocolFees[token] = 0;
         IERC20MintBurn(token).safeTransfer(msg.sender, protocolFee);
