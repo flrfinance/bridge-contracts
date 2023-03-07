@@ -194,6 +194,7 @@ library Multisig {
             revert SignerAlreadyExists(signer);
         }
 
+        signerInfo.index = s.firstCommitteeSize + s.secondCommitteeSize;
         if (isFirstCommittee) {
             s.firstCommitteeSize++;
             signerInfo.status = SignerStatus.FirstCommittee;
@@ -201,8 +202,6 @@ library Multisig {
             s.secondCommitteeSize++;
             signerInfo.status = SignerStatus.SecondCommittee;
         }
-
-        signerInfo.index = s.firstCommitteeSize + s.secondCommitteeSize;
     }
 
     /// @dev Removes a signer.
