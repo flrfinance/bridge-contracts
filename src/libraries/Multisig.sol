@@ -32,6 +32,10 @@ library Multisig {
     /// approved yet.
     error InvalidExecuteRequest();
 
+    /// @dev Thrown when the current next execution index is
+    /// greater equal to the new next execution index.
+    error InvalidNextExecutionIndex();
+
     /// @dev Maximum number of members in each committee.
     /// @notice This number cannot be increased further
     /// with the current implementation. Our implementation
@@ -280,8 +284,8 @@ library Multisig {
     /// @dev Get approvers for a given request.
     /// @param s The multisig to get the approvers for.
     /// @param hash The hash of the request.
-    /// @return approvers list of approvers
-    /// @return count count of approvers.
+    /// @return approvers List of approvers.
+    /// @return count Count of approvers.
     function getApprovers(DualMultisig storage s, bytes32 hash)
         internal
         view
@@ -299,6 +303,18 @@ library Multisig {
         }
 
         return (approvers, count);
+    }
+
+    /// @dev Forcefully set next next execution index.
+    /// @param s The multisig to set the next execution index for.
+    /// @param index The new next execution index.
+    function forceSetNextExecutionIndex(DualMultisig storage s, uint256 index)
+        internal
+    {
+        if (s.nextExecutionIndex >= index) {
+            revert InvalidNextExecutionIndex();
+        }
+        s.nextExecutionIndex = index;
     }
 
     /// @dev Try to execute the next approved request.

@@ -334,4 +334,12 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
             IERC20(token).safeTransfer(feeRecipient, tokenValidatorFee);
         }
     }
+
+    /// @inheritdoc IWrap
+    function forceSetNextExecutionIndex(uint256 index)
+        public
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        multisig.forceSetNextExecutionIndex(index);
+    }
 }

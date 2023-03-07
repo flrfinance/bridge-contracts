@@ -202,4 +202,9 @@ interface IWrap is IAccessControlEnumerable {
     /// @notice Can be triggered by anyone but the fee is transfered to the
     /// set feeRecepient for the validator.
     function claimValidatorFees(address validator) external;
+
+    /// @dev Forcefully set next next execution index.
+    /// @param index The new next execution index.
+    /// @notice Can only be called by the owner of the contract.
+    function forceSetNextExecutionIndex(uint256 index) external;
 }
