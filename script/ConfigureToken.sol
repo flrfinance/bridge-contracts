@@ -15,7 +15,8 @@ contract ConfigureToken is Script {
     function run() external {
         IWrap.TokenInfo memory ti = IWrap.TokenInfo({
             maxAmount: maxAmount,
-            minAmount: minAmount
+            minAmount: minAmount,
+            dailyLimit: 0
         });
 
         vm.startBroadcast();

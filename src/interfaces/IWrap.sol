@@ -29,6 +29,9 @@ interface IWrap is IAccessControlEnumerable {
     /// @dev Thrown when the recipient address is the zero address.
     error InvalidToAddress();
 
+    /// @dev Thrown when the daily volume exceeds the dailyLimit.
+    error DailyLimitExhausted();
+
     /// @dev Emitted when a user deposits.
     /// @param id ID associated with the request.
     /// @param token Token deposited.
@@ -73,23 +76,33 @@ interface IWrap is IAccessControlEnumerable {
     /// @param maxAmount Maximum amount to deposit/approve.
     /// @param minAmount Minimum amount to deposit/approve.
     /// @notice Set max amount to zero to disable the token.
+    /// @param dailyLimit Daily volume limit.
     struct TokenInfo {
         uint256 maxAmount;
         uint256 minAmount;
+        uint256 dailyLimit;
     }
 
-    /// @dev Token information, with fees included.
+    /// @dev Token info that is stored in the contact storage.
     /// @param maxAmount Maximum amount to deposit/approve.
     /// @param minAmount Minimum amount to approve.
     /// @param minAmountWithFees Minimum amount to deposit, with fees included.
+    /// @param dailyLimit Daily volume limit.
+    /// @param consumedLimit Consumed daily volume limit.
+    /// @param lastUpdated Last timestamp when the consumed limit was set to 0.
     /// @notice Set max amount to zero to disable the token.
+    /// @notice Set daily limit to 0 to disable the daily limit. Consumed limit should
+    /// always be less than equal to dailyLimit.
     /// @notice The minAmountWithFees is minAmount + depositFees(minAmount).
     /// On deposit, the amount should be greater than minAmountWithFees such that,
     /// after fee deduction, it is still greater equal than minAmount.
-    struct TokenInfoWithFees {
+    struct TokenInfoStore {
         uint256 maxAmount;
         uint256 minAmount;
         uint256 minAmountWithFees;
+        uint256 dailyLimit;
+        uint256 consumedLimit;
+        uint256 lastUpdated;
     }
 
     /// @dev Request information.

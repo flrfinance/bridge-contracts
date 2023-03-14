@@ -17,7 +17,7 @@ contract WhitelistWrap is Script {
     bool constant isWrapMintBurn = false;
 
     function run() external {
-        IWrap.TokenInfo memory ti = IWrap.TokenInfo(minAmount, maxAmount);
+        IWrap.TokenInfo memory ti = IWrap.TokenInfo(minAmount, maxAmount, 0);
 
         vm.startBroadcast();
         if (isWrapMintBurn) {

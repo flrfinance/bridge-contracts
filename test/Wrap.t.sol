@@ -136,8 +136,14 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
     function _assertCorrectAddTokenState() internal {
         uint256 tokensLength = wrap.exposed_tokensLength();
         assertEq(wrap.exposed_tokens(tokensLength - 1), address(token));
-        (uint256 maxAmount, uint256 minAmount, uint256 minAmountWithFees) = wrap
-            .tokenInfos(address(token));
+        (
+            uint256 maxAmount,
+            uint256 minAmount,
+            uint256 minAmountWithFees,
+            ,
+            ,
+
+        ) = wrap.tokenInfos(address(token));
         assertEq(maxAmount, tokenInfo.maxAmount);
         assertEq(minAmount, tokenInfo.minAmount);
         assertEq(
@@ -185,7 +191,11 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
             secondCommitteeAcceptanceQuorum
         );
 
-        tokenInfo = IWrap.TokenInfo({ maxAmount: 10_000, minAmount: 100 });
+        tokenInfo = IWrap.TokenInfo({
+            maxAmount: 10_000,
+            minAmount: 100,
+            dailyLimit: 0
+        });
         validator = signer;
         validatorFeeRecipient = address(1);
 
@@ -944,12 +954,19 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         uint256 newMinAmount = 10;
         IWrap.TokenInfo memory newTokenInfo = IWrap.TokenInfo({
             maxAmount: newMaxAmount,
-            minAmount: newMinAmount
+            minAmount: newMinAmount,
+            dailyLimit: 0
         });
         wrap.configureToken(token, newTokenInfo);
 
-        (uint256 maxAmount, uint256 minAmount, uint256 minAmountWithFees) = wrap
-            .tokenInfos(token);
+        (
+            uint256 maxAmount,
+            uint256 minAmount,
+            uint256 minAmountWithFees,
+            ,
+            ,
+
+        ) = wrap.tokenInfos(token);
 
         assertEq(maxAmount, newMaxAmount);
         assertEq(minAmount, newMinAmount);
@@ -964,7 +981,7 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         vm.expectRevert(IWrap.InvalidTokenConfig.selector);
         wrap.configureToken(
             token,
-            IWrap.TokenInfo({ maxAmount: 100, minAmount: 0 })
+            IWrap.TokenInfo({ maxAmount: 100, minAmount: 0, dailyLimit: 0 })
         );
     }
 
@@ -1013,7 +1030,11 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
     }
 
     function test_addTokenRevertsIfMinAmountIsZero() public {
-        tokenInfo = IWrap.TokenInfo({ maxAmount: 10_000, minAmount: 0 });
+        tokenInfo = IWrap.TokenInfo({
+            maxAmount: 10_000,
+            minAmount: 0,
+            dailyLimit: 0
+        });
         vm.expectRevert(IWrap.InvalidTokenConfig.selector);
         wrap.exposed__addToken(token, mirrorToken, tokenInfo);
     }
