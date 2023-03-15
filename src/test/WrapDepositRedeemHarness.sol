@@ -11,10 +11,4 @@ contract WrapDepositRedeemHarness is WrapHarness, WrapDepositRedeem {
         Multisig.Config memory config,
         uint16 _validatorsFeeBPS
     ) WrapDepositRedeem(config, _validatorsFeeBPS) {}
-
-    function accumulatedValidatorFees(
-        address token
-    ) public view virtual override(Wrap, WrapDepositRedeem) returns (uint256) {
-        return super.accumulatedValidatorFees(token);
-    }
 }

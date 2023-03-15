@@ -45,38 +45,28 @@ abstract contract WrapHarness is Wrap {
         return multisig.secondCommitteeSize;
     }
 
-    function exposed_multisigSignerInfo(address signer)
-        external
-        view
-        returns (Multisig.SignerInfo memory)
-    {
+    function exposed_multisigSignerInfo(
+        address signer
+    ) external view returns (Multisig.SignerInfo memory) {
         return multisig.signers[signer];
     }
 
-    function exposed_multisigTotalPoints() external view returns (uint64) {
-        return multisig.totalPoints;
+    function exposed_multisigGetApprovers(
+        bytes32 hash
+    ) external view returns (uint16[] memory, uint16) {
+        return Multisig.getApprovers(multisig, hash);
     }
 
-    function exposed_multisigPoints(address signer)
-        external
-        view
-        returns (uint64)
-    {
-        return Multisig.points(multisig, signer);
-    }
-
-    function exposed_onDeposit(address token, uint256 amount)
-        external
-        returns (uint256 fee)
-    {
+    function exposed_onDeposit(
+        address token,
+        uint256 amount
+    ) external returns (uint256 fee) {
         return onDeposit(token, amount);
     }
 
-    function exposed_depositFees(uint256 amount)
-        external
-        view
-        returns (uint256 fee)
-    {
+    function exposed_depositFees(
+        uint256 amount
+    ) external view returns (uint256 fee) {
         return depositFees(amount);
     }
 
@@ -88,11 +78,10 @@ abstract contract WrapHarness is Wrap {
         return onExecute(token, amount, to);
     }
 
-    function exposed_calculateFee(uint256 amount, uint16 feeBPS)
-        external
-        pure
-        returns (uint256)
-    {
+    function exposed_calculateFee(
+        uint256 amount,
+        uint16 feeBPS
+    ) external pure returns (uint256) {
         return calculateFee(amount, feeBPS);
     }
 

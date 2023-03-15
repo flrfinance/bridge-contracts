@@ -26,4 +26,11 @@ contract TestAsserter is Test {
     ) internal {
         assertTrue(_a == _b);
     }
+
+    function _assertEq(uint16[] memory _a, uint16[] memory _b) internal {
+        assertEq(_a.length, _b.length);
+        for (uint256 i = 0; i < _a.length; i++) {
+            assertEq(_a[i], _b[i]);
+        }
+    }
 }

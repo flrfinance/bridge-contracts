@@ -110,6 +110,12 @@ contract MultisigTest is TestAsserter, MultisigHelpers {
         _;
     }
 
+    modifier withExecutedRequest() {
+        _craftApprovedRequest(testRequestParams);
+        multisig.tryExecute(currentRequest.hash, currentRequest.params.id);
+        _;
+    }
+
     modifier withCommitteeSize(uint8 size, Committee committee) {
         // TODO: Mock committeeSize to eq. maxCommitteeSize
         for (uint8 i = 1; i <= size; i++) {
@@ -134,7 +140,6 @@ contract MultisigTest is TestAsserter, MultisigHelpers {
         assertEq(multisig.secondCommitteeAcceptanceQuorum, 1);
         assertEq(multisig.firstCommitteeSize, 0);
         assertEq(multisig.secondCommitteeSize, 0);
-        assertEq(multisig.totalPoints, 0);
         assertEq(multisig.nextExecutionIndex, 0);
         _assertEq(
             multisig.signers[address(0)].status,
@@ -188,19 +193,7 @@ contract MultisigTest is TestAsserter, MultisigHelpers {
         assertFalse(multisig.isSigner(currentSigner));
     }
 
-    function testPoints() public withApprovedRequest {
-        assertEq(Multisig.points(multisig, signerInFirstCommittee), 1);
-        assertEq(Multisig.points(multisig, signerInSecondCommittee), 1);
-    }
-
-    function testPointsRevertsIfSignerNotActive() public {
-        vm.expectRevert(
-            abi.encodeWithSelector(Multisig.SignerNotActive.selector, signer)
-        );
-        Multisig.points(multisig, signer);
-    }
-
-    function testConfigure() public {
+    function testConstructorConfiguration() public {
         assertEq(
             multisig.firstCommitteeAcceptanceQuorum,
             firstCommitteeAcceptanceQuorum
@@ -209,6 +202,12 @@ contract MultisigTest is TestAsserter, MultisigHelpers {
             multisig.secondCommitteeAcceptanceQuorum,
             secondCommitteeAcceptanceQuorum
         );
+    }
+
+    function testConfigure() public {
+        multisig.configure(Multisig.Config(2, 5));
+        assertEq(multisig.firstCommitteeAcceptanceQuorum, 2);
+        assertEq(multisig.secondCommitteeAcceptanceQuorum, 5);
     }
 
     function testConfigureRevertsOnInvalidFirstQuorum() public {
@@ -264,7 +263,7 @@ contract MultisigTest is TestAsserter, MultisigHelpers {
         );
         assertEq(
             signerInfo.index,
-            multisig.firstCommitteeSize + multisig.secondCommitteeSize
+            multisig.firstCommitteeSize + multisig.secondCommitteeSize - 1
         );
     }
 
@@ -326,6 +325,32 @@ contract MultisigTest is TestAsserter, MultisigHelpers {
             )
         );
         multisig.addSigner(signer, true);
+    }
+
+    function testFirstCommitteeCanHave128Members() public {
+        for (uint8 i = 0; i < 128; i++) {
+            multisig.addSigner(vm.addr(i + 1), true);
+        }
+
+        assertEq(multisig.firstCommitteeSize, 128);
+    }
+
+    function testSecondCommitteeCanHave128Members() public {
+        for (uint8 i = 0; i < 128; i++) {
+            multisig.addSigner(vm.addr(i + 1), false);
+        }
+
+        assertEq(multisig.secondCommitteeSize, 128);
+    }
+
+    function testBothCommitteesCanHave128Members() public {
+        for (uint8 i = 0; i < 128; i++) {
+            multisig.addSigner(vm.addr(i + 1), true);
+            multisig.addSigner(vm.addr(128 + uint256(i) + 1), false);
+        }
+
+        assertEq(multisig.firstCommitteeSize, 128);
+        assertEq(multisig.secondCommitteeSize, 128);
     }
 
     function _testRemoveSigner(
@@ -493,9 +518,7 @@ contract MultisigTest is TestAsserter, MultisigHelpers {
         uint256 secondSignerMask = 1 << secondSignerInfo.index;
         assertEq(request.approvers, firstSignerMask | secondSignerMask);
         assertEq(multisig.approvedRequests[id], hash);
-        assertEq(multisig.totalPoints, 2);
-        assertEq(Multisig.points(multisig, signerInSecondCommittee), 1);
-        assertEq(Multisig.points(multisig, signerInSecondCommittee), 1);
+        // TODO
         _assertEq(request.status, Multisig.RequestStatus.Accepted);
     }
 
@@ -593,41 +616,122 @@ contract MultisigTest is TestAsserter, MultisigHelpers {
         assertFalse(success);
     }
 
-    function _testClearPoints(address signerToClear) internal {
-        uint64 initialSignerPoints = Multisig.points(multisig, signerToClear);
-        uint64 initialTotalPoints = multisig.totalPoints;
-        uint64 pointsDeductedFromTotal = multisig.clearPoints(signerToClear);
-        assertEq(pointsDeductedFromTotal, initialSignerPoints);
-        assertEq(
-            multisig.totalPoints,
-            initialTotalPoints - pointsDeductedFromTotal
+    function testGetApproversForNonExistentRequest() public {
+        bytes32 hash = keccak256(
+            abi.encodePacked("this_request_does_not_exist")
         );
-        uint64 finalSignerPoints = Multisig.points(multisig, signerToClear);
-        assertEq(finalSignerPoints, 0);
+        (uint16[] memory approvers, uint16 count) = multisig.getApprovers(hash);
+        assertEq(count, 0);
+        _assertEq(approvers, new uint16[](0));
     }
 
-    function testClearPoints() public withApprovedRequest {
-        assertEq(Multisig.points(multisig, signerInFirstCommittee), 1);
-        assertEq(Multisig.points(multisig, signerInSecondCommittee), 1);
-        assertEq(multisig.totalPoints, 2);
-        _testClearPoints(signerInFirstCommittee);
-        assertEq(Multisig.points(multisig, signerInFirstCommittee), 0);
-        assertEq(Multisig.points(multisig, signerInSecondCommittee), 1);
-        assertEq(multisig.totalPoints, 1);
-        _testClearPoints(signerInSecondCommittee);
-        assertEq(Multisig.points(multisig, signerInFirstCommittee), 0);
-        assertEq(Multisig.points(multisig, signerInSecondCommittee), 0);
-        assertEq(multisig.totalPoints, 0);
+    function testGetApproversForRequestWithoutApprovals() public withRequest {
+        bytes32 hash = currentRequest.hash;
+        (uint16[] memory approvers, uint16 count) = multisig.getApprovers(hash);
+        assertEq(count, 0);
+        _assertEq(approvers, new uint16[](0));
     }
 
-    function testClearPointsWithZeroPoints() public withAnySigner {
-        _testClearPoints(signer);
+    function testGetApproversForUndecidedRequest() public withUndecidedRequest {
+        bytes32 hash = currentRequest.hash;
+        uint16[] memory expectedApprovers = new uint16[](1);
+        expectedApprovers[0] = 0;
+        (uint16[] memory approvers, uint16 count) = multisig.getApprovers(hash);
+        assertEq(count, 1);
+        _assertEq(approvers, expectedApprovers);
     }
 
-    function testClearPointsRevertsIfSignerNotActive() public {
-        vm.expectRevert(
-            abi.encodeWithSelector(Multisig.SignerNotActive.selector, signer)
-        );
-        multisig.clearPoints(signer);
+    function testGetApproversForUndecidedRequestWithMultipleApprovers()
+        public
+        withRequest
+    {
+        bytes32 hash = currentRequest.hash;
+        uint256 id = currentRequest.params.id;
+        multisig.configure(Multisig.Config(2, 3));
+
+        multisig.addSigner(vm.addr(1), true);
+        multisig.addSigner(vm.addr(2), true);
+        multisig.addSigner(vm.addr(3), false);
+        multisig.addSigner(vm.addr(4), false);
+        multisig.addSigner(vm.addr(5), false);
+        multisig.addSigner(vm.addr(6), false);
+
+        multisig.tryApprove(vm.addr(1), hash, id);
+        multisig.tryApprove(vm.addr(2), hash, id);
+        multisig.tryApprove(vm.addr(4), hash, id);
+        multisig.tryApprove(vm.addr(6), hash, id);
+
+        uint16[] memory expectedApprovers = new uint16[](6);
+        expectedApprovers[0] = 0;
+        expectedApprovers[1] = 1;
+        expectedApprovers[2] = 3;
+        expectedApprovers[3] = 5;
+        expectedApprovers[4] = 0;
+        expectedApprovers[5] = 0;
+
+        (uint16[] memory approvers, uint16 count) = multisig.getApprovers(hash);
+        assertEq(count, 4);
+        _assertEq(approvers, expectedApprovers);
+    }
+
+    function testGetApproversForApprovedRequest() public withApprovedRequest {
+        bytes32 hash = currentRequest.hash;
+        uint16[] memory expectedApprovers = new uint16[](2);
+        expectedApprovers[0] = 0;
+        expectedApprovers[1] = 1;
+        (uint16[] memory approvers, uint16 count) = multisig.getApprovers(hash);
+        assertEq(count, 2);
+        _assertEq(approvers, expectedApprovers);
+    }
+
+    function testGetApproversForApprovedRequestWithMultipleSigners()
+        public
+        withRequest
+    {
+        bytes32 hash = currentRequest.hash;
+        uint256 id = currentRequest.params.id;
+        multisig.configure(Multisig.Config(3, 2));
+
+        multisig.addSigner(vm.addr(1), true);
+        multisig.addSigner(vm.addr(2), true);
+        multisig.addSigner(vm.addr(3), true);
+        multisig.addSigner(vm.addr(4), false);
+        multisig.addSigner(vm.addr(5), false);
+
+        multisig.tryApprove(vm.addr(1), hash, id);
+        multisig.tryApprove(vm.addr(2), hash, id);
+        multisig.tryApprove(vm.addr(3), hash, id);
+        multisig.tryApprove(vm.addr(4), hash, id);
+        multisig.tryApprove(vm.addr(5), hash, id);
+
+        uint16[] memory expectedApprovers = new uint16[](5);
+        expectedApprovers[0] = 0;
+        expectedApprovers[1] = 1;
+        expectedApprovers[2] = 2;
+        expectedApprovers[3] = 3;
+        expectedApprovers[4] = 4;
+
+        (uint16[] memory approvers, uint16 count) = multisig.getApprovers(hash);
+        assertEq(count, 5);
+        _assertEq(approvers, expectedApprovers);
+    }
+
+    function testForceSetNextExecutionIndexRevertsOnSmallerIndex()
+        public
+        withExecutedRequest
+    {
+        vm.expectRevert(Multisig.InvalidNextExecutionIndex.selector);
+        multisig.forceSetNextExecutionIndex(multisig.nextExecutionIndex - 1);
+    }
+
+    function testForceSetNextExecutionIndexRevertsOnUnchangedIndex() public {
+        vm.expectRevert(Multisig.InvalidNextExecutionIndex.selector);
+        multisig.forceSetNextExecutionIndex(multisig.nextExecutionIndex);
+    }
+
+    function testForceSetNextExecutionIndex() public {
+        uint256 newNextExecutionIndex = multisig.nextExecutionIndex + 2;
+        multisig.forceSetNextExecutionIndex(newNextExecutionIndex);
+        assertEq(multisig.nextExecutionIndex, newNextExecutionIndex);
     }
 }
