@@ -14,10 +14,15 @@ contract WhitelistWrap is Script {
     string constant tokenSymbol = "WXDC";
     uint256 constant minAmount = 1e18;
     uint256 constant maxAmount = 1e24;
+    uint256 constant dailyLimit = 1e20;
     bool constant isWrapMintBurn = false;
 
     function run() external {
-        IWrap.TokenInfo memory ti = IWrap.TokenInfo(minAmount, maxAmount, 0);
+        IWrap.TokenInfo memory ti = IWrap.TokenInfo(
+            minAmount,
+            maxAmount,
+            dailyLimit
+        );
 
         vm.startBroadcast();
         if (isWrapMintBurn) {
