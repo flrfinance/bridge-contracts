@@ -97,7 +97,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
 
     /// @dev Modifier to make a function callable only when the token and amount is correct.
     modifier isValidTokenAmount(address token, uint256 amount) {
-        TokenInfoStore memory t = tokenInfos[token];
+        TokenInfoStore storage t = tokenInfos[token];
 
         // Notice that amount should be greater than minAmountWithFees.
         // This is required as amount after the fees should be greater
