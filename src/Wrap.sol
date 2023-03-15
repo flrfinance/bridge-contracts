@@ -109,7 +109,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
 
         if (t.dailyLimit != 0) {
             // Reset daily limit if the day is passed after last update.
-            if (t.lastUpdated + 1 days > block.timestamp) {
+            if (block.timestamp > t.lastUpdated + 1 days) {
                 t.lastUpdated = block.timestamp;
                 t.consumedLimit = 0;
             }
