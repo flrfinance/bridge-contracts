@@ -136,11 +136,10 @@ library Multisig {
     /// @param s The relevant multisig to check.
     /// @param hash The hash of the request being checked.
     /// @return The status of the request with the given hash.
-    function status(DualMultisig storage s, bytes32 hash)
-        internal
-        view
-        returns (RequestStatus)
-    {
+    function status(
+        DualMultisig storage s,
+        bytes32 hash
+    ) internal view returns (RequestStatus) {
         return s.requests[hash].status;
     }
 
@@ -149,11 +148,10 @@ library Multisig {
     /// @param s The relevant multisig to check.
     /// @param signer The address of the potential signer.
     /// @return True if the provided address is a signer.
-    function isSigner(DualMultisig storage s, address signer)
-        internal
-        view
-        returns (bool)
-    {
+    function isSigner(
+        DualMultisig storage s,
+        address signer
+    ) internal view returns (bool) {
         return s.signers[signer].status >= SignerStatus.FirstCommittee;
     }
 
@@ -285,11 +283,10 @@ library Multisig {
     /// @param hash The hash of the request.
     /// @return approvers List of approvers.
     /// @return count Count of approvers.
-    function getApprovers(DualMultisig storage s, bytes32 hash)
-        internal
-        view
-        returns (uint16[] memory approvers, uint16 count)
-    {
+    function getApprovers(
+        DualMultisig storage s,
+        bytes32 hash
+    ) internal view returns (uint16[] memory approvers, uint16 count) {
         uint256 mask = s.requests[hash].approvers;
         uint16 signersCount = s.firstCommitteeSize + s.secondCommitteeSize;
         approvers = new uint16[](signersCount);
@@ -307,9 +304,10 @@ library Multisig {
     /// @dev Forcefully set next next execution index.
     /// @param s The multisig to set the next execution index for.
     /// @param index The new next execution index.
-    function forceSetNextExecutionIndex(DualMultisig storage s, uint256 index)
-        internal
-    {
+    function forceSetNextExecutionIndex(
+        DualMultisig storage s,
+        uint256 index
+    ) internal {
         if (s.nextExecutionIndex >= index) {
             revert InvalidNextExecutionIndex();
         }

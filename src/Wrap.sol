@@ -62,19 +62,17 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     /// @param token Address of the token being deposited.
     /// @param amount The amount being deposited.
     /// @return fee The fee charged to the depositor.
-    function onDeposit(address token, uint256 amount)
-        internal
-        virtual
-        returns (uint256 fee);
+    function onDeposit(
+        address token,
+        uint256 amount
+    ) internal virtual returns (uint256 fee);
 
     /// @dev Returns the fees charged for a given deposit amount.
     /// @param amount The deposit amount in question.
     /// @return fee The fee charged for the given deposit amount.
-    function depositFees(uint256 amount)
-        internal
-        view
-        virtual
-        returns (uint256 fee);
+    function depositFees(
+        uint256 amount
+    ) internal view virtual returns (uint256 fee);
 
     /// @dev Hook to execute on successful bridging.
     /// @param token Address of the token being bridged.
@@ -123,11 +121,10 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     }
 
     /// @dev Internal function to calculate fees by amount and BPS.
-    function calculateFee(uint256 amount, uint16 feeBPS)
-        internal
-        pure
-        returns (uint256)
-    {
+    function calculateFee(
+        uint256 amount,
+        uint16 feeBPS
+    ) internal pure returns (uint256) {
         // 10,000 is 100%
         return (amount * feeBPS) / 10000;
     }
@@ -233,10 +230,10 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     }
 
     /// @inheritdoc IWrap
-    function configureToken(address token, TokenInfo calldata tokenInfo)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
+    function configureToken(
+        address token,
+        TokenInfo calldata tokenInfo
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _configureTokenInfo(
             token,
             tokenInfo.minAmount,
@@ -246,10 +243,9 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     }
 
     /// @inheritdoc IWrap
-    function configureValidatorFees(uint16 _validatorFeeBPS)
-        public
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
+    function configureValidatorFees(
+        uint16 _validatorFeeBPS
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
         if (_validatorFeeBPS > maxFeeBPS) {
             revert FeeExceedsMaxFee();
         }
@@ -280,10 +276,9 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     }
 
     /// @inheritdoc IWrap
-    function configureMultisig(Multisig.Config calldata config)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
+    function configureMultisig(
+        Multisig.Config calldata config
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         multisig.configure(config);
     }
 
@@ -308,10 +303,9 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     }
 
     /// @inheritdoc IWrap
-    function removeValidator(address validator)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
+    function removeValidator(
+        address validator
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         multisig.removeSigner(validator);
     }
 
@@ -336,10 +330,9 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     }
 
     /// @inheritdoc IWrap
-    function forceSetNextExecutionIndex(uint256 index)
-        public
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
+    function forceSetNextExecutionIndex(
+        uint256 index
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
         multisig.forceSetNextExecutionIndex(index);
     }
 }

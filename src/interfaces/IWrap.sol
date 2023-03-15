@@ -121,8 +121,10 @@ interface IWrap is IAccessControlEnumerable {
     /// @param tokenInfo The token's new configuration info.
     /// @notice Set maxAmount to zero to disable the token.
     /// @notice Can only be called by the owner.
-    function configureToken(address token, TokenInfo calldata tokenInfo)
-        external;
+    function configureToken(
+        address token,
+        TokenInfo calldata tokenInfo
+    ) external;
 
     /// @dev Set the multisig configuration.
     /// @param config Multisig config.
