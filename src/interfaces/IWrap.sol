@@ -29,6 +29,12 @@ interface IWrap is IAccessControlEnumerable {
     /// @dev Thrown when the recipient address is the zero address.
     error InvalidToAddress();
 
+    /// @dev Thrown when the provided blocknumber is not of the most recent 256 blocks.
+    error InvalidBlockHash();
+
+    /// @dev Thrown when the daily volume exceeds the dailyLimit.
+    error DailyLimitExhausted();
+
     /// @dev Emitted when a user deposits.
     /// @param id ID associated with the request.
     /// @param token Token deposited.
@@ -73,23 +79,33 @@ interface IWrap is IAccessControlEnumerable {
     /// @param maxAmount Maximum amount to deposit/approve.
     /// @param minAmount Minimum amount to deposit/approve.
     /// @notice Set max amount to zero to disable the token.
+    /// @param dailyLimit Daily volume limit.
     struct TokenInfo {
         uint256 maxAmount;
         uint256 minAmount;
+        uint256 dailyLimit;
     }
 
-    /// @dev Token information, with fees included.
+    /// @dev Token info that is stored in the contact storage.
     /// @param maxAmount Maximum amount to deposit/approve.
     /// @param minAmount Minimum amount to approve.
     /// @param minAmountWithFees Minimum amount to deposit, with fees included.
+    /// @param dailyLimit Daily volume limit.
+    /// @param consumedLimit Consumed daily volume limit.
+    /// @param lastUpdated Last timestamp when the consumed limit was set to 0.
     /// @notice Set max amount to zero to disable the token.
+    /// @notice Set daily limit to 0 to disable the daily limit. Consumed limit should
+    /// always be less than equal to dailyLimit.
     /// @notice The minAmountWithFees is minAmount + depositFees(minAmount).
     /// On deposit, the amount should be greater than minAmountWithFees such that,
     /// after fee deduction, it is still greater equal than minAmount.
-    struct TokenInfoWithFees {
+    struct TokenInfoStore {
         uint256 maxAmount;
         uint256 minAmount;
         uint256 minAmountWithFees;
+        uint256 dailyLimit;
+        uint256 consumedLimit;
+        uint256 lastUpdated;
     }
 
     /// @dev Request information.
@@ -152,16 +168,24 @@ interface IWrap is IAccessControlEnumerable {
     /// @param token Token requested.
     /// @param amount Amount of tokens requested.
     /// @param to Address to release the funds to.
+    /// @param recentBlockhash Block hash of `recentBlocknumber`
+    /// @param recentBlocknumber Recent block number
     function approveExecute(
         uint256 id,
         address token,
         uint256 amount,
-        address to
+        address to,
+        bytes32 recentBlockhash,
+        uint256 recentBlocknumber
     ) external;
 
     /// @dev Approve and/or execute requests.
     /// @param requests Requests to approve and/or execute.
-    function batchApproveExecute(RequestInfo[] calldata requests) external;
+    function batchApproveExecute(
+        RequestInfo[] calldata requests,
+        bytes32 recentBlockhash,
+        uint256 recentBlocknumber
+    ) external;
 
     /// @dev Pauses the contract.
     /// @notice The contract can be paused by all addresses

@@ -27,7 +27,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     bool public paused;
 
     /// @dev Map token address to token info.
-    mapping(address => TokenInfoWithFees) public tokenInfos;
+    mapping(address => TokenInfoStore) public tokenInfos;
 
     /// @dev Map mirror token address to token address.
     mapping(address => address) public mirrorTokens;
@@ -95,7 +95,8 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
 
     /// @dev Modifier to make a function callable only when the token and amount is correct.
     modifier isValidTokenAmount(address token, uint256 amount) {
-        TokenInfoWithFees memory t = tokenInfos[token];
+        TokenInfoStore storage t = tokenInfos[token];
+
         // Notice that amount should be greater than minAmountWithFees.
         // This is required as amount after the fees should be greater
         // than minAmount so that when this is approved it passes the
@@ -103,14 +104,43 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         if (t.maxAmount <= amount || t.minAmountWithFees > amount) {
             revert InvalidTokenAmount();
         }
+
+        if (t.dailyLimit != 0) {
+            // Reset daily limit if the day is passed after last update.
+            if (block.timestamp > t.lastUpdated + 1 days) {
+                t.lastUpdated = block.timestamp;
+                t.consumedLimit = 0;
+            }
+
+            if (t.consumedLimit + amount > t.dailyLimit) {
+                revert DailyLimitExhausted();
+            }
+            t.consumedLimit += amount;
+        }
         _;
     }
 
     /// @dev Modifier to make a function callable only when the token and amount is correct.
     modifier isValidMirrorTokenAmount(address mirrorToken, uint256 amount) {
-        TokenInfoWithFees memory t = tokenInfos[mirrorTokens[mirrorToken]];
+        TokenInfoStore memory t = tokenInfos[mirrorTokens[mirrorToken]];
         if (t.maxAmount <= amount || t.minAmount > amount) {
             revert InvalidTokenAmount();
+        }
+        _;
+    }
+
+    /// @dev Modifier to make a function callable only when the recent block hash is valid.
+    modifier withValidRecentBlockHash(
+        bytes32 recentBlockHash,
+        uint256 recentBlockNumber
+    ) {
+        // Prevent malicious validators from pre-producing attestation signatures.
+        // `blockhash(recentBlockNumber)` yields `0x0` when `recentBlockNumber < block.number - 256`.
+        if (
+            recentBlockHash == bytes32(0) ||
+            blockhash(recentBlockNumber) != recentBlockHash
+        ) {
+            revert InvalidBlockHash();
         }
         _;
     }
@@ -157,8 +187,8 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         return keccak256(abi.encodePacked(id, token, amount, to));
     }
 
-    /// @inheritdoc IWrap
-    function approveExecute(
+    /// @dev Internal function to approve and/or execute a given request.
+    function _approveExecute(
         uint256 id,
         address mirrorToken,
         uint256 amount,
@@ -197,9 +227,25 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     }
 
     /// @inheritdoc IWrap
-    function batchApproveExecute(RequestInfo[] calldata requests) external {
+    function approveExecute(
+        uint256 id,
+        address mirrorToken,
+        uint256 amount,
+        address to,
+        bytes32 recentBlockHash,
+        uint256 recentBlockNumber
+    ) public withValidRecentBlockHash(recentBlockHash, recentBlockNumber) {
+        _approveExecute(id, mirrorToken, amount, to);
+    }
+
+    /// @inheritdoc IWrap
+    function batchApproveExecute(
+        RequestInfo[] calldata requests,
+        bytes32 recentBlockHash,
+        uint256 recentBlockNumber
+    ) external withValidRecentBlockHash(recentBlockHash, recentBlockNumber) {
         for (uint256 i = 0; i < requests.length; i++) {
-            approveExecute(
+            _approveExecute(
                 requests[i].id,
                 requests[i].token,
                 requests[i].amount,
@@ -212,6 +258,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         address token,
         uint256 minAmount,
         uint256 maxAmount,
+        uint256 dailyLimit,
         bool newToken
     ) internal {
         uint256 currMinAmount = tokenInfos[token].minAmount;
@@ -221,12 +268,17 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         ) {
             revert InvalidTokenConfig();
         }
-        TokenInfoWithFees memory tokenInfoWithFees = TokenInfoWithFees(
+
+        // configuring token also resets the daily volume limit
+        TokenInfoStore memory tokenInfoStore = TokenInfoStore(
             maxAmount,
             minAmount,
-            minAmount + depositFees(minAmount)
+            minAmount + depositFees(minAmount),
+            dailyLimit,
+            0,
+            block.timestamp
         );
-        tokenInfos[token] = tokenInfoWithFees;
+        tokenInfos[token] = tokenInfoStore;
     }
 
     /// @inheritdoc IWrap
@@ -238,6 +290,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
             token,
             tokenInfo.minAmount,
             tokenInfo.maxAmount,
+            tokenInfo.dailyLimit,
             false
         );
     }
@@ -269,6 +322,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
             token,
             tokenInfo.minAmount,
             tokenInfo.maxAmount,
+            tokenInfo.dailyLimit,
             true
         );
         tokens.push(token);

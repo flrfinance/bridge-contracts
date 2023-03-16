@@ -27,11 +27,6 @@ library Multisig {
     /// to an apprroved request.
     error InvalidId();
 
-    /// @dev Thrown when an execution attempt is made for a
-    /// request that is too far in the future or has not been
-    /// approved yet.
-    error InvalidExecuteRequest();
-
     /// @dev Thrown when the current next execution index is
     /// greater equal to the new next execution index.
     error InvalidNextExecutionIndex();

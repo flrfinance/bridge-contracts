@@ -122,6 +122,13 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         _;
     }
 
+    modifier withTokenInfo(IWrap.TokenInfo memory newTokenInfo) {
+        vm.prank(admin);
+        tokenInfo = newTokenInfo;
+        wrap.configureToken(token, newTokenInfo);
+        _;
+    }
+
     function _expectMissingRoleRevert(address account, bytes32 role) internal {
         vm.expectRevert(
             abi.encodePacked(
@@ -136,14 +143,23 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
     function _assertCorrectAddTokenState() internal {
         uint256 tokensLength = wrap.exposed_tokensLength();
         assertEq(wrap.exposed_tokens(tokensLength - 1), address(token));
-        (uint256 maxAmount, uint256 minAmount, uint256 minAmountWithFees) = wrap
-            .tokenInfos(address(token));
+        (
+            uint256 maxAmount,
+            uint256 minAmount,
+            uint256 minAmountWithFees,
+            uint256 dailyLimit,
+            uint256 consumedLimit,
+            uint256 lastUpdated
+        ) = wrap.tokenInfos(address(token));
         assertEq(maxAmount, tokenInfo.maxAmount);
         assertEq(minAmount, tokenInfo.minAmount);
         assertEq(
             minAmountWithFees,
             tokenInfo.minAmount + wrap.exposed_depositFees(tokenInfo.minAmount)
         );
+        assertEq(dailyLimit, tokenInfo.dailyLimit);
+        assertEq(consumedLimit, 0);
+        assertEq(lastUpdated, block.timestamp);
         assertEq(wrap.mirrorTokens(mirrorToken), address(token));
     }
 
@@ -158,9 +174,23 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         requestId = wrap.nextExecutionIndex();
         uint256 fee = _onExecuteFee(amount);
         vm.prank(validatorA);
-        wrap.approveExecute(requestId, mirrorToken, amount, recipient);
+        wrap.approveExecute(
+            requestId,
+            mirrorToken,
+            amount,
+            recipient,
+            blockhash(block.number - 1),
+            block.number - 1
+        );
         vm.prank(validatorB);
-        wrap.approveExecute(requestId, mirrorToken, amount, recipient);
+        wrap.approveExecute(
+            requestId,
+            mirrorToken,
+            amount,
+            recipient,
+            blockhash(block.number - 1),
+            block.number - 1
+        );
         _onExecutePerformExternalAction(token, amount, user, fee);
     }
 
@@ -185,7 +215,11 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
             secondCommitteeAcceptanceQuorum
         );
 
-        tokenInfo = IWrap.TokenInfo({ maxAmount: 10_000, minAmount: 100 });
+        tokenInfo = IWrap.TokenInfo({
+            maxAmount: 10_000,
+            minAmount: 100,
+            dailyLimit: 1e40
+        });
         validator = signer;
         validatorFeeRecipient = address(1);
 
@@ -193,6 +227,10 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         validatorAFeeRecipient = address(2);
         validatorB = signerB;
         validatorBFeeRecipient = address(3);
+
+        // You cannot `approveExecute` on genesis because
+        // you need a previous block to exist
+        vm.roll(2);
     }
 
     function testConstructorSetupRole() public {
@@ -483,6 +521,23 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         _testDeposit(tokenInfo.maxAmount - 1);
     }
 
+    function testDepositWithDailyLimitAmount()
+        public
+        withToken
+        withTokenInfo(
+            IWrap.TokenInfo({
+                maxAmount: 2 ** 256 - 1,
+                minAmount: 100,
+                dailyLimit: 1000
+            })
+        )
+    {
+        (, , , uint256 dailyLimit, uint256 consumedLimit, ) = wrap.tokenInfos(
+            token
+        );
+        _testDeposit(dailyLimit - consumedLimit);
+    }
+
     function testDeposit(uint256 amount) public withToken {
         vm.assume(
             amount >
@@ -571,6 +626,65 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
     ) public withToken {
         vm.assume(amount > tokenInfo.maxAmount);
         _testDepositRevertsWithInvalidTokenAmount(amount);
+    }
+
+    function _testDepositRevertsWhenDailyLimitExhausted(
+        uint256 amount
+    ) internal withMintedTokens(user, amount) {
+        vm.startPrank(user);
+        IERC20(token).approve(address(wrap), amount);
+        vm.expectRevert(IWrap.DailyLimitExhausted.selector);
+        wrap.deposit(token, amount, user);
+        vm.stopPrank();
+    }
+
+    function testDepositRevertsWhenDailyLimitExhausted()
+        public
+        withToken
+        withTokenInfo(
+            IWrap.TokenInfo({
+                maxAmount: 2 ** 256 - 1,
+                minAmount: 100,
+                dailyLimit: 1000
+            })
+        )
+    {
+        (, , , uint256 dailyLimit, uint256 consumedLimit, ) = wrap.tokenInfos(
+            token
+        );
+        _testDepositRevertsWhenDailyLimitExhausted(
+            dailyLimit - consumedLimit + 1
+        );
+    }
+
+    function testDepositDailyLimitResets()
+        public
+        withToken
+        withMintedTokens(user, 2000)
+        withTokenInfo(
+            IWrap.TokenInfo({
+                maxAmount: 2 ** 256 - 1,
+                minAmount: 100,
+                dailyLimit: 1000
+            })
+        )
+    {
+        uint256 dailyLimit = tokenInfo.dailyLimit;
+        vm.startPrank(user);
+        IERC20(token).approve(address(wrap), 2 ** 256 - 1);
+
+        wrap.deposit(token, dailyLimit / 2, user);
+        wrap.deposit(token, dailyLimit / 2, user);
+
+        vm.expectRevert(IWrap.DailyLimitExhausted.selector);
+        wrap.deposit(token, 1000, user);
+
+        (, , , , , uint256 lastUpdated) = wrap.tokenInfos(token);
+
+        vm.warp(lastUpdated + 1 days + 1);
+        wrap.deposit(token, 1000, user);
+
+        vm.stopPrank();
     }
 
     function _testDepositRevertsIfToAddressIsInvalid(
@@ -670,7 +784,14 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         vm.prank(validatorA);
         vm.expectEmit(true, true, true, true);
         emit Requested(requestId, mirrorToken, amount, user);
-        wrap.approveExecute(requestId, mirrorToken, amount, user);
+        wrap.approveExecute(
+            requestId,
+            mirrorToken,
+            amount,
+            user,
+            blockhash(block.number - 1),
+            block.number - 1
+        );
 
         assertEq(IERC20(token).balanceOf(user), initialRecipientBalance);
         assertEq(
@@ -685,7 +806,14 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         _expectApproveExecuteFinalEvents(requestId, token, amount, user, fee);
 
         vm.prank(validatorB);
-        wrap.approveExecute(requestId, mirrorToken, amount, user);
+        wrap.approveExecute(
+            requestId,
+            mirrorToken,
+            amount,
+            user,
+            blockhash(block.number - 1),
+            block.number - 1
+        );
 
         bytes32 hash = wrap.exposed_hashRequest(
             requestId,
@@ -743,6 +871,199 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         _testApproveExecute(amount);
     }
 
+    function _testApproveExecuteRevertsIfBlockHashIsInvalid(
+        uint256 amount,
+        bytes32 recentBlockHash,
+        uint256 recentBlockNumber
+    ) internal withMintedTokens(user, amount) {
+        uint256 initialNextExecutionIndex = wrap.nextExecutionIndex();
+        uint256 requestId = initialNextExecutionIndex;
+        vm.prank(validatorA);
+        vm.expectRevert(IWrap.InvalidBlockHash.selector);
+        wrap.approveExecute(
+            requestId,
+            mirrorToken,
+            amount,
+            user,
+            recentBlockHash,
+            recentBlockNumber
+        );
+    }
+
+    function _testApproveExecuteRevertsIfBlockHashDoesNotMatchBlockNumber(
+        uint256 amount
+    ) internal {
+        _testApproveExecuteRevertsIfBlockHashIsInvalid(
+            amount,
+            blockhash(block.number - 1),
+            block.number - 2
+        );
+    }
+
+    function testApproveExecuteRevertsIfBlockHashDoesNotMatchBlockNumber()
+        public
+        withToken
+        withValidators
+    {
+        _testApproveExecuteRevertsIfBlockHashDoesNotMatchBlockNumber(
+            tokenInfo.minAmount
+        );
+        _testApproveExecuteRevertsIfBlockHashDoesNotMatchBlockNumber(
+            tokenInfo.minAmount + 1
+        );
+        _testApproveExecuteRevertsIfBlockHashDoesNotMatchBlockNumber(
+            tokenInfo.minAmount + 2
+        );
+        _testApproveExecuteRevertsIfBlockHashDoesNotMatchBlockNumber(
+            tokenInfo.maxAmount - 2
+        );
+        _testApproveExecuteRevertsIfBlockHashDoesNotMatchBlockNumber(
+            tokenInfo.maxAmount - 1
+        );
+    }
+
+    function testApproveExecuteRevertsIfBlockHashDoesNotMatchBlockNumber(
+        uint256 amount,
+        bytes32 recentBlockHash,
+        uint256 recentBlockNumber
+    ) public withToken withValidators {
+        vm.assume(amount > tokenInfo.minAmount);
+        vm.assume(amount < tokenInfo.maxAmount);
+        vm.assume(blockhash(recentBlockNumber) != recentBlockHash);
+        _testApproveExecuteRevertsIfBlockHashIsInvalid(
+            amount,
+            recentBlockHash,
+            recentBlockNumber
+        );
+    }
+
+    function _testApproveExecuteRevertsIfBlockHashIsZero(
+        uint256 amount,
+        uint256 recentBlockNumber
+    ) internal {
+        _testApproveExecuteRevertsIfBlockHashIsInvalid(
+            amount,
+            bytes32(0),
+            recentBlockNumber
+        );
+    }
+
+    function testApproveExecuteRevertsIfBlockHashIsZero()
+        public
+        withToken
+        withValidators
+    {
+        uint256 recentBlockNumber = block.number - 1;
+        _testApproveExecuteRevertsIfBlockHashIsZero(
+            tokenInfo.minAmount,
+            recentBlockNumber
+        );
+        _testApproveExecuteRevertsIfBlockHashIsZero(
+            tokenInfo.minAmount + 1,
+            recentBlockNumber
+        );
+        _testApproveExecuteRevertsIfBlockHashIsZero(
+            tokenInfo.minAmount + 2,
+            recentBlockNumber
+        );
+        _testApproveExecuteRevertsIfBlockHashIsZero(
+            tokenInfo.maxAmount - 2,
+            recentBlockNumber
+        );
+        _testApproveExecuteRevertsIfBlockHashIsZero(
+            tokenInfo.maxAmount - 1,
+            recentBlockNumber
+        );
+    }
+
+    function testApproveExecuteRevertsIfBlockHashIsZero(
+        uint256 amount,
+        uint256 recentBlockNumber
+    ) public withToken withValidators {
+        vm.assume(amount > tokenInfo.minAmount);
+        vm.assume(amount < tokenInfo.maxAmount);
+        _testApproveExecuteRevertsIfBlockHashIsInvalid(
+            amount,
+            bytes32(0),
+            recentBlockNumber
+        );
+    }
+
+    function _testApproveExecuteRevertsIfBlockNumberIsOld(
+        uint256 amount
+    ) internal {
+        uint256 recentBlockNumber = block.number - 1;
+        bytes32 recentBlockHash = blockhash(recentBlockNumber);
+        vm.roll(recentBlockNumber + 256 + 1);
+        _testApproveExecuteRevertsIfBlockHashIsInvalid(
+            amount,
+            recentBlockHash,
+            recentBlockNumber
+        );
+    }
+
+    function testApproveExecuteRevertsIfBlockNumberIsOld()
+        public
+        withToken
+        withValidators
+    {
+        _testApproveExecuteRevertsIfBlockNumberIsOld(tokenInfo.minAmount);
+        _testApproveExecuteRevertsIfBlockNumberIsOld(tokenInfo.minAmount + 1);
+        _testApproveExecuteRevertsIfBlockNumberIsOld(tokenInfo.minAmount + 2);
+        _testApproveExecuteRevertsIfBlockNumberIsOld(tokenInfo.maxAmount - 2);
+        _testApproveExecuteRevertsIfBlockNumberIsOld(tokenInfo.maxAmount - 1);
+    }
+
+    function testApproveExecuteRevertsIfBlockNumberIsOld(
+        uint256 amount
+    ) public withToken withValidators {
+        vm.assume(amount > tokenInfo.minAmount);
+        vm.assume(amount < tokenInfo.maxAmount);
+        _testApproveExecuteRevertsIfBlockNumberIsOld(amount);
+    }
+
+    function _testApproveExecuteRevertsIfBlockNumberIsOldAndBlockHashIsZero(
+        uint256 amount
+    ) internal {
+        uint256 recentBlockNumber = block.number - 1;
+        vm.roll(recentBlockNumber + 256 + 1);
+        _testApproveExecuteRevertsIfBlockHashIsInvalid(
+            amount,
+            bytes32(0),
+            recentBlockNumber
+        );
+    }
+
+    function testApproveExecuteRevertsIfBlockNumberIsOldAndBlockHashIsZero()
+        public
+        withToken
+        withValidators
+    {
+        _testApproveExecuteRevertsIfBlockNumberIsOldAndBlockHashIsZero(
+            tokenInfo.minAmount
+        );
+        _testApproveExecuteRevertsIfBlockNumberIsOldAndBlockHashIsZero(
+            tokenInfo.minAmount + 1
+        );
+        _testApproveExecuteRevertsIfBlockNumberIsOldAndBlockHashIsZero(
+            tokenInfo.minAmount + 2
+        );
+        _testApproveExecuteRevertsIfBlockNumberIsOldAndBlockHashIsZero(
+            tokenInfo.maxAmount - 2
+        );
+        _testApproveExecuteRevertsIfBlockNumberIsOldAndBlockHashIsZero(
+            tokenInfo.maxAmount - 1
+        );
+    }
+
+    function testApproveExecuteRevertsIfBlockNumberIsOldAndBlockHashIsZero(
+        uint256 amount
+    ) public withToken withValidators {
+        vm.assume(amount > tokenInfo.minAmount);
+        vm.assume(amount < tokenInfo.maxAmount);
+        _testApproveExecuteRevertsIfBlockNumberIsOldAndBlockHashIsZero(amount);
+    }
+
     function _testApproveExecuteRevertsIfContractsPaused(
         uint256 amount
     ) internal withMintedTokens(user, amount) {
@@ -750,7 +1071,14 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         uint256 requestId = initialNextExecutionIndex;
         vm.prank(validatorA);
         vm.expectRevert(IWrap.ContractPaused.selector);
-        wrap.approveExecute(requestId, mirrorToken, amount, user);
+        wrap.approveExecute(
+            requestId,
+            mirrorToken,
+            amount,
+            user,
+            blockhash(block.number - 1),
+            block.number - 1
+        );
     }
 
     function testApproveExecuteRevertsIfContractsPaused()
@@ -781,7 +1109,14 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         uint256 requestId = initialNextExecutionIndex;
         vm.prank(validatorA);
         vm.expectRevert(IWrap.InvalidTokenAmount.selector);
-        wrap.approveExecute(requestId, mirrorToken, amount, user);
+        wrap.approveExecute(
+            requestId,
+            mirrorToken,
+            amount,
+            user,
+            blockhash(block.number - 1),
+            block.number - 1
+        );
     }
 
     function testApproveExecuteRevertsIfAmountIsLessThanMinAmount()
@@ -861,7 +1196,11 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         }
 
         vm.prank(validatorA);
-        wrap.batchApproveExecute(requests);
+        wrap.batchApproveExecute(
+            requests,
+            blockhash(block.number - 1),
+            block.number - 1
+        );
 
         assertEq(IERC20(token).balanceOf(user), initialRecipientBalance);
 
@@ -880,7 +1219,11 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         }
 
         vm.prank(validatorB);
-        wrap.batchApproveExecute(requests);
+        wrap.batchApproveExecute(
+            requests,
+            blockhash(block.number - 1),
+            block.number - 1
+        );
 
         _expectApproveExecuteFinalCustodianBalance(
             initialCustodianBalance,
@@ -936,14 +1279,22 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         vm.prank(admin);
         uint256 newMaxAmount = 1337;
         uint256 newMinAmount = 10;
+        uint256 newDailyLimit = 100 * 10 ** 18;
         IWrap.TokenInfo memory newTokenInfo = IWrap.TokenInfo({
             maxAmount: newMaxAmount,
-            minAmount: newMinAmount
+            minAmount: newMinAmount,
+            dailyLimit: newDailyLimit
         });
         wrap.configureToken(token, newTokenInfo);
 
-        (uint256 maxAmount, uint256 minAmount, uint256 minAmountWithFees) = wrap
-            .tokenInfos(token);
+        (
+            uint256 maxAmount,
+            uint256 minAmount,
+            uint256 minAmountWithFees,
+            uint256 dailyLimit,
+            uint256 consumedLimit,
+            uint256 lastUpdated
+        ) = wrap.tokenInfos(token);
 
         assertEq(maxAmount, newMaxAmount);
         assertEq(minAmount, newMinAmount);
@@ -951,6 +1302,9 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
             minAmountWithFees,
             newMinAmount + wrap.exposed_depositFees(newMinAmount)
         );
+        assertEq(dailyLimit, newDailyLimit);
+        assertEq(consumedLimit, 0);
+        assertEq(lastUpdated, block.timestamp);
     }
 
     function testConfigureTokenRevertsIfMinAmountIsZero() public withToken {
@@ -958,7 +1312,7 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         vm.expectRevert(IWrap.InvalidTokenConfig.selector);
         wrap.configureToken(
             token,
-            IWrap.TokenInfo({ maxAmount: 100, minAmount: 0 })
+            IWrap.TokenInfo({ maxAmount: 100, minAmount: 0, dailyLimit: 0 })
         );
     }
 
@@ -1007,7 +1361,11 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
     }
 
     function test_addTokenRevertsIfMinAmountIsZero() public {
-        tokenInfo = IWrap.TokenInfo({ maxAmount: 10_000, minAmount: 0 });
+        tokenInfo = IWrap.TokenInfo({
+            maxAmount: 10_000,
+            minAmount: 0,
+            dailyLimit: 0
+        });
         vm.expectRevert(IWrap.InvalidTokenConfig.selector);
         wrap.exposed__addToken(token, mirrorToken, tokenInfo);
     }

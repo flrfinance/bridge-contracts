@@ -27,7 +27,7 @@ contract TestSetup is Script {
             firstCommitteeAcceptanceQuorum,
             secondCommitteeAcceptanceQuorum
         );
-        IWrap.TokenInfo memory ti = IWrap.TokenInfo(1e21, 1e18);
+        IWrap.TokenInfo memory ti = IWrap.TokenInfo(1e21, 1e18, 0);
 
         vm.startBroadcast(userAndOwner);
         WrapDepositRedeem wrapDepositRedeem = new WrapDepositRedeem(
