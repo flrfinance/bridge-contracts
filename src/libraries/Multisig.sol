@@ -6,10 +6,7 @@ pragma solidity ^0.8.15;
 /// A separate quorum must be reached in both committees
 /// to approve a given request. A request is rejected if
 /// either of the two committees rejects it. Each committee
-/// cannot have more than 128 members. For every quorum, the
-/// signer that attested in favor of the corresponding request
-/// is rewarded a point. The intention is to use the accumulated
-/// points to appropriately reward signers for their good deeds.
+/// cannot have more than 128 members.
 library Multisig {
     /// @dev Thrown when an already existing signer is added.
     error SignerAlreadyExists(address signer);
@@ -29,6 +26,10 @@ library Multisig {
     /// @dev Thrown when a given ID has already been assigned
     /// to an apprroved request.
     error InvalidId();
+
+    /// @dev Thrown when the current next execution index is
+    /// greater equal to the new next execution index.
+    error InvalidNextExecutionIndex();
 
     /// @dev Maximum number of members in each committee.
     /// @notice This number cannot be increased further
@@ -99,10 +100,7 @@ library Multisig {
     /// required to reach quorum in the second committee.
     /// @param firstCommitteeSize Size of the first committee.
     /// @param secondCommitteeSize Size of the second committee.
-    /// @param totalPoints Total points accumulated among all signers.
     /// @param nextExecutionIndex Index of the request that will be executed next.
-    /// @param points An array of points where element i is the points
-    /// accumulated by signer at index i.
     /// @param signers Mapping from signer address to signer info.
     /// @param requests Mapping from request hash to request info.
     /// @param approvedRequests Mapping request ID to request hash.
@@ -111,10 +109,8 @@ library Multisig {
         uint8 secondCommitteeAcceptanceQuorum; // slot 1 (8 - 15bits)
         uint8 firstCommitteeSize; // slot 1 (16 - 23bits)
         uint8 secondCommitteeSize; // slot 1 (24 - 31bits)
-        uint64 totalPoints; // slot 1 (32 - 95 bits)
-        // slot1 (95 - 255 spare bits)
+        // slot1 (32 - 255 spare bits)
         uint256 nextExecutionIndex;
-        uint64[maxSignersSize] points;
         mapping(address => SignerInfo) signers;
         mapping(bytes32 => Request) requests;
         mapping(uint256 => bytes32) approvedRequests;
@@ -154,23 +150,6 @@ library Multisig {
         return s.signers[signer].status >= SignerStatus.FirstCommittee;
     }
 
-    /// @dev Returns the number of points accumulated by a
-    /// given signer.
-    /// @param s The relevant multisig to check.
-    /// @param signer The address of the signer.
-    /// @return The number of points accumalted by the
-    /// given signer.
-    function points(
-        DualMultisig storage s,
-        address signer
-    ) internal view returns (uint64) {
-        SignerInfo memory signerInfo = s.signers[signer];
-        if (signerInfo.status < SignerStatus.FirstCommittee) {
-            revert SignerNotActive(signer);
-        }
-        return s.points[signerInfo.index];
-    }
-
     /// @dev Updates a multisig's configuration.
     function configure(DualMultisig storage s, Config memory c) internal {
         if (
@@ -208,6 +187,7 @@ library Multisig {
             revert SignerAlreadyExists(signer);
         }
 
+        signerInfo.index = s.firstCommitteeSize + s.secondCommitteeSize;
         if (isFirstCommittee) {
             s.firstCommitteeSize++;
             signerInfo.status = SignerStatus.FirstCommittee;
@@ -215,8 +195,6 @@ library Multisig {
             s.secondCommitteeSize++;
             signerInfo.status = SignerStatus.SecondCommittee;
         }
-
-        signerInfo.index = s.firstCommitteeSize + s.secondCommitteeSize;
     }
 
     /// @dev Removes a signer.
@@ -228,22 +206,6 @@ library Multisig {
             revert SignerNotActive(signer);
         }
         signerInfo.status = SignerStatus.Removed;
-    }
-
-    /// @dev Helper function to increment signer points as per a mask.
-    /// @param s The multisig for which to increment the signer points.
-    /// @param mask The bit mask to use for incrementing the points.
-    /// @notice A set bit at index i in the mask should increment the
-    /// number of points of the signer at index i by one.
-    function incrementPoints(DualMultisig storage s, uint256 mask) private {
-        uint16 count = 0;
-        for (uint16 i = 0; i < maxSignersSize; i++) {
-            if ((mask & (1 << i)) != 0) {
-                s.points[i]++;
-                count++;
-            }
-        }
-        s.totalPoints += count;
     }
 
     /// @dev Approve a request if its has not already been approved.
@@ -293,7 +255,6 @@ library Multisig {
             ++request.approvalsSecondCommittee;
         }
 
-        // If quorum has been reached, increment the number of points.
         if (
             request.approvalsFirstCommittee >=
             s.firstCommitteeAcceptanceQuorum &&
@@ -302,7 +263,6 @@ library Multisig {
         ) {
             request.status = RequestStatus.Accepted;
             s.approvedRequests[id] = hash;
-            incrementPoints(s, request.approvers);
             return RequestStatusTransition.UndecidedToAccepted;
         } else if (request.status == RequestStatus.NULL) {
             // If this is the first approval, change the request status
@@ -311,6 +271,42 @@ library Multisig {
             return RequestStatusTransition.NULLToUndecided;
         }
         return RequestStatusTransition.Unchanged;
+    }
+
+    /// @dev Get approvers for a given request.
+    /// @param s The multisig to get the approvers for.
+    /// @param hash The hash of the request.
+    /// @return approvers List of approvers.
+    /// @return count Count of approvers.
+    function getApprovers(
+        DualMultisig storage s,
+        bytes32 hash
+    ) internal view returns (uint16[] memory approvers, uint16 count) {
+        uint256 mask = s.requests[hash].approvers;
+        uint16 signersCount = s.firstCommitteeSize + s.secondCommitteeSize;
+        approvers = new uint16[](signersCount);
+        count = 0;
+        for (uint16 i = 0; i < signersCount; i++) {
+            if ((mask & (1 << i)) != 0) {
+                approvers[count] = i;
+                count++;
+            }
+        }
+
+        return (approvers, count);
+    }
+
+    /// @dev Forcefully set next next execution index.
+    /// @param s The multisig to set the next execution index for.
+    /// @param index The new next execution index.
+    function forceSetNextExecutionIndex(
+        DualMultisig storage s,
+        uint256 index
+    ) internal {
+        if (s.nextExecutionIndex >= index) {
+            revert InvalidNextExecutionIndex();
+        }
+        s.nextExecutionIndex = index;
     }
 
     /// @dev Try to execute the next approved request.
@@ -329,24 +325,5 @@ library Multisig {
             return true;
         }
         return false;
-    }
-
-    /// @dev Clears the points accumulated by a signer.
-    /// @param s The multisig for which to clear the given signer's points.
-    /// @param signer The address of the signer whose points to clear.
-    /// @return The number of points that were cleared.
-    function clearPoints(
-        DualMultisig storage s,
-        address signer
-    ) internal returns (uint64) {
-        SignerInfo memory signerInfo = s.signers[signer];
-        if (signerInfo.status < SignerStatus.FirstCommittee) {
-            revert SignerNotActive(signer);
-        }
-        uint8 index = signerInfo.index;
-        uint64 p = s.points[index];
-        s.points[index] = 0;
-        s.totalPoints -= p;
-        return p;
     }
 }

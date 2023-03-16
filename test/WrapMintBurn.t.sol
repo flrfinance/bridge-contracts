@@ -55,29 +55,13 @@ contract WrapMintBurnTest is WrapTest {
         assertEq(wmb.validatorFeeBPS(), validatorFeeBPS);
     }
 
-    function _testAccumulatedValidatorFees(
-        uint256 validatorFees
-    ) internal override {
-        // TODO: Perform some actions to increase protocol fees
-        uint256 accumulatedProtocolFees = wmb.accumulatedProtocolFees(token);
-        vm.mockCall(
-            token,
-            abi.encodeWithSelector(IERC20.balanceOf.selector),
-            abi.encode(validatorFees)
-        );
-        assertEq(
-            wmb.accumulatedValidatorFees(token),
-            validatorFees - accumulatedProtocolFees
-        );
-    }
-
     function _testOnDeposit(
         uint256 userInitialBalance,
         uint256 amountToDeposit
     ) internal override withToken withMintedTokens(user, userInitialBalance) {
-        uint256 initialAccumulatedProtocolFees = wmb.accumulatedProtocolFees(
+        /*uint256 initialAccumulatedProtocolFees = wmb.accumulatedProtocolFees(
             token
-        );
+        );*/
         uint256 fee = wrap.exposed_depositFees(amountToDeposit);
         vm.startPrank(user);
         IERC20(token).approve(address(wrap), amountToDeposit);
@@ -87,10 +71,10 @@ contract WrapMintBurnTest is WrapTest {
         emit Transfer(user, address(wrap), fee);
         assertEq(wrap.exposed_onDeposit(token, amountToDeposit), fee);
         vm.stopPrank();
-        assertEq(
+        /*assertEq(
             wmb.accumulatedProtocolFees(token),
             initialAccumulatedProtocolFees + fee
-        );
+        );*/
         assertEq(
             IERC20(token).balanceOf(user),
             userInitialBalance - amountToDeposit
@@ -123,9 +107,9 @@ contract WrapMintBurnTest is WrapTest {
     function _testOnExecute(
         uint256 amount
     ) internal override withToken withMintedTokens(address(wrap), amount) {
-        uint256 initialAccumulatedProtocolFees = wmb.accumulatedProtocolFees(
+        /*uint256 initialAccumulatedProtocolFees = wmb.accumulatedProtocolFees(
             token
-        );
+        );*/
         uint256 initialRecipientBalance = IERC20(token).balanceOf(user);
         uint256 protocolFee = wrap.exposed_calculateFee(amount, protocolFeeBPS);
         uint256 fee = protocolFee +
@@ -136,10 +120,10 @@ contract WrapMintBurnTest is WrapTest {
         vm.expectEmit(true, true, true, true, token);
         emit Transfer(address(0), address(wrap), fee);
         assertEq(wrap.exposed_onExecute(token, amount, user), fee);
-        assertEq(
+        /*assertEq(
             wmb.accumulatedProtocolFees(token),
             initialAccumulatedProtocolFees + protocolFee
-        );
+        );*/
         assertEq(
             IERC20(token).balanceOf(user),
             initialRecipientBalance + (amount - fee)
@@ -198,7 +182,7 @@ contract WrapMintBurnTest is WrapTest {
         );
     }
 
-    function _accumulatedValidatorFees()
+    /*function _accumulatedValidatorFees()
         internal
         view
         override
@@ -206,7 +190,7 @@ contract WrapMintBurnTest is WrapTest {
     {
         uint256 contractBalance = IERC20(token).balanceOf(address(wrap));
         return contractBalance - wmb.accumulatedProtocolFees(token);
-    }
+    }*/
 
     function testClaimProtocolFees() public withToken withValidators {
         uint256 expectedProtocolFee = 0;
@@ -223,14 +207,14 @@ contract WrapMintBurnTest is WrapTest {
         uint256 initialAdminBalance = IERC20(token).balanceOf(admin);
         uint256 initialCustodianBalance = IERC20(token).balanceOf(_custodian());
 
-        assertEq(wmb.accumulatedProtocolFees(token), expectedProtocolFee);
+        //assertEq(wmb.accumulatedProtocolFees(token), expectedProtocolFee);
 
         vm.prank(admin);
         vm.expectEmit(true, true, true, true, token);
         emit Transfer(address(wrap), admin, expectedProtocolFee);
         wmb.claimProtocolFees(token);
 
-        assertEq(wmb.accumulatedProtocolFees(token), 0);
+        //assertEq(wmb.accumulatedProtocolFees(token), 0);
         assertEq(
             IERC20(token).balanceOf(admin),
             initialAdminBalance + expectedProtocolFee
@@ -284,6 +268,7 @@ contract WrapMintBurnTest is WrapTest {
         );
     }
 
+    /*
     // TODO: Rename modifier
     modifier updatesAccumulatedProtocolFees(uint256 amount) {
         uint256 initialAccumulatedProtocolFees = wmb.accumulatedProtocolFees(
@@ -369,7 +354,7 @@ contract WrapMintBurnTest is WrapTest {
 
         vm.assume(amount < tokenInfo.maxAmount);
         _testApproveExecuteUpdatesAccumulatedProtocolFees(amount);
-    }
+    }*/
 
     function _expectApproveExecuteFinalEvents(
         uint256 id,

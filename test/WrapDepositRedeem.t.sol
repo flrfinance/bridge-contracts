@@ -53,17 +53,6 @@ contract WrapDepositRedeemTest is WrapTest {
         assertEq(wrap.validatorFeeBPS(), validatorFeeBPS);
     }
 
-    function _testAccumulatedValidatorFees(
-        uint256 validatorFees
-    ) internal override {
-        vm.mockCall(
-            token,
-            abi.encodeWithSelector(IERC20.balanceOf.selector),
-            abi.encode(validatorFees)
-        );
-        assertEq(wdr.accumulatedValidatorFees(token), validatorFees);
-    }
-
     function _testOnDeposit(
         uint256 userInitialBalance,
         uint256 amountToDeposit
@@ -152,16 +141,6 @@ contract WrapDepositRedeemTest is WrapTest {
         vm.prank(user);
         _expectMissingRoleRevert(user, DEFAULT_ADMIN_ROLE);
         wdr.addToken(token, mirrorToken, tokenInfo);
-    }
-
-    function _accumulatedValidatorFees()
-        internal
-        view
-        override
-        returns (uint256)
-    {
-        uint256 contractBalance = IERC20(token).balanceOf(address(wrap));
-        return contractBalance;
     }
 
     function _expectDepositEvents(

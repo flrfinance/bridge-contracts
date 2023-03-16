@@ -51,14 +51,10 @@ abstract contract WrapHarness is Wrap {
         return multisig.signers[signer];
     }
 
-    function exposed_multisigTotalPoints() external view returns (uint64) {
-        return multisig.totalPoints;
-    }
-
-    function exposed_multisigPoints(
-        address signer
-    ) external view returns (uint64) {
-        return Multisig.points(multisig, signer);
+    function exposed_multisigGetApprovers(
+        bytes32 hash
+    ) external view returns (uint16[] memory, uint16) {
+        return Multisig.getApprovers(multisig, hash);
     }
 
     function exposed_onDeposit(

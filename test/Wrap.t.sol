@@ -252,22 +252,6 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         );
     }
 
-    function _testAccumulatedValidatorFees(
-        uint256 validatorFees
-    ) internal virtual;
-
-    function testAccumulatedValidatorFees() public {
-        _testAccumulatedValidatorFees(0);
-        _testAccumulatedValidatorFees(100);
-        _testAccumulatedValidatorFees(1337);
-        _testAccumulatedValidatorFees(31337);
-        _testAccumulatedValidatorFees(432e20);
-    }
-
-    function testAccumulatedValidatorFees(uint256 validatorFees) public {
-        _testAccumulatedValidatorFees(validatorFees);
-    }
-
     function _testOnDeposit(
         uint256 userInitialBalance,
         uint256 amountToDeposit
@@ -355,12 +339,6 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         );
     }
 
-    function _accumulatedValidatorFees()
-        internal
-        view
-        virtual
-        returns (uint256);
-
     function testConfigureValidatorFeeRecipient()
         public
         withToken
@@ -404,25 +382,37 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
     }
 
     function testClaimValidatorFees() public withToken withValidators {
-        uint256 expectedValidatorAPoints = wrap.exposed_multisigPoints(
-            validatorA
+        uint8 validatorAIndex = wrap
+            .exposed_multisigSignerInfo(validatorA)
+            .index;
+        uint8 validatorBIndex = wrap
+            .exposed_multisigSignerInfo(validatorB)
+            .index;
+
+        uint256 expectedValidatorAFeeBalance = wrap.feeBalance(
+            token,
+            validatorAIndex
         );
-        uint256 expectedValidatorBPoints = wrap.exposed_multisigPoints(
-            validatorB
+        uint256 expectedValidatorBFeeBalance = wrap.feeBalance(
+            token,
+            validatorBIndex
         );
 
         // TODO: Create helper function
+        uint256 feeToValidator = _onExecuteFee(1000) / 2;
         _executeApproveExecute(1000, user);
-        expectedValidatorAPoints += 1;
-        expectedValidatorBPoints += 1;
+        expectedValidatorAFeeBalance += feeToValidator;
+        expectedValidatorBFeeBalance += feeToValidator;
 
+        feeToValidator = _onExecuteFee(2000) / 2;
         _executeApproveExecute(2000, user);
-        expectedValidatorAPoints += 1;
-        expectedValidatorBPoints += 1;
+        expectedValidatorAFeeBalance += feeToValidator;
+        expectedValidatorBFeeBalance += feeToValidator;
 
+        feeToValidator = _onExecuteFee(3000) / 2;
         _executeApproveExecute(3000, user);
-        expectedValidatorAPoints += 1;
-        expectedValidatorBPoints += 1;
+        expectedValidatorAFeeBalance += feeToValidator;
+        expectedValidatorBFeeBalance += feeToValidator;
 
         _executeDeposit(4000, user); // should not affect validator fees
 
@@ -434,72 +424,49 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         );
         uint256 initialCustodianBalance = IERC20(token).balanceOf(_custodian());
 
-        uint256 accumulatedValidatorFees = _accumulatedValidatorFees();
-
-        uint256 expectedTotalPoints = expectedValidatorAPoints +
-            expectedValidatorBPoints;
-
         assertEq(
-            wrap.exposed_multisigPoints(validatorA),
-            expectedValidatorAPoints
+            wrap.feeBalance(token, validatorAIndex),
+            expectedValidatorAFeeBalance
         );
         assertEq(
-            wrap.exposed_multisigPoints(validatorB),
-            expectedValidatorBPoints
+            wrap.feeBalance(token, validatorBIndex),
+            expectedValidatorBFeeBalance
         );
-        assertEq(wrap.exposed_multisigTotalPoints(), expectedTotalPoints);
-
-        uint256 expectedValidatorAFees = (accumulatedValidatorFees *
-            expectedValidatorAPoints) / expectedTotalPoints;
 
         vm.prank(user);
         vm.expectEmit(true, true, true, true, token);
         emit Transfer(
             address(wrap),
             validatorAFeeRecipient,
-            expectedValidatorAFees
+            expectedValidatorAFeeBalance
         );
         wrap.claimValidatorFees(validatorA);
 
-        assertEq(wrap.exposed_multisigPoints(validatorA), 0);
-        assertEq(
-            wrap.exposed_multisigPoints(validatorB),
-            expectedValidatorBPoints
-        );
-        assertEq(
-            wrap.exposed_multisigTotalPoints(),
-            expectedTotalPoints - expectedValidatorAPoints
-        );
-
-        uint256 expectedValidatorBFees = ((accumulatedValidatorFees -
-            expectedValidatorAFees) * expectedValidatorBPoints) /
-            (expectedTotalPoints - expectedValidatorAPoints);
+        assertEq(wrap.feeBalance(token, validatorAIndex), 0);
 
         vm.prank(user);
         vm.expectEmit(true, true, true, true, token);
         emit Transfer(
             address(wrap),
             validatorBFeeRecipient,
-            expectedValidatorBFees
+            expectedValidatorBFeeBalance
         );
         wrap.claimValidatorFees(validatorB);
 
-        assertEq(wrap.exposed_multisigPoints(validatorA), 0);
-        assertEq(wrap.exposed_multisigPoints(validatorB), 0);
-        assertEq(wrap.exposed_multisigTotalPoints(), 0);
+        assertEq(wrap.feeBalance(token, validatorBIndex), 0);
 
         assertEq(
             IERC20(token).balanceOf(validatorAFeeRecipient),
-            initialValidatorABalance + expectedValidatorAFees
+            initialValidatorABalance + expectedValidatorAFeeBalance
         );
         assertEq(
             IERC20(token).balanceOf(validatorBFeeRecipient),
-            initialValidatorBBalance + expectedValidatorBFees
+            initialValidatorBBalance + expectedValidatorBFeeBalance
         );
         assertEq(
             IERC20(token).balanceOf(_custodian()),
             initialCustodianBalance -
-                (expectedValidatorAFees + expectedValidatorBFees)
+                (expectedValidatorAFeeBalance + expectedValidatorBFeeBalance)
         );
     }
 
@@ -847,6 +814,33 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
             blockhash(block.number - 1),
             block.number - 1
         );
+
+        bytes32 hash = wrap.exposed_hashRequest(
+            requestId,
+            mirrorToken,
+            amount,
+            user
+        );
+
+        uint8 validatorAIndex = wrap
+            .exposed_multisigSignerInfo(validatorA)
+            .index;
+        uint8 validatorBIndex = wrap
+            .exposed_multisigSignerInfo(validatorB)
+            .index;
+
+        {
+            (uint16[] memory approvers, uint16 count) = wrap
+                .exposed_multisigGetApprovers(hash);
+            assertEq(count, 2);
+            assertEq(approvers.length, 2);
+            assertEq(approvers[0], validatorAIndex);
+            assertEq(approvers[1], validatorBIndex);
+        }
+
+        uint256 feeToValidator = fee / 2;
+        assertEq(wrap.feeBalance(token, validatorAIndex), feeToValidator);
+        assertEq(wrap.feeBalance(token, validatorBIndex), feeToValidator);
 
         assertEq(
             IERC20(token).balanceOf(user),
@@ -1488,7 +1482,7 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
             .exposed_multisigSecondCommitteeSize();
         assertEq(
             validatorInfo.index,
-            finalFirstCommitteeSize + finalSecondCommitteeSize
+            finalFirstCommitteeSize + finalSecondCommitteeSize - 1
         );
         assertEq(
             wrap.exposed_multisigFirstCommitteeSize(),
@@ -1564,5 +1558,18 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         vm.prank(user);
         _expectMissingRoleRevert(user, DEFAULT_ADMIN_ROLE);
         wrap.removeValidator(validator);
+    }
+
+    function testForceSetNextExecutionIndexRevertsIfCallerIsNotAdmin() public {
+        uint256 newNextExecutionIndex = wrap.nextExecutionIndex() + 1;
+        vm.prank(user);
+        _expectMissingRoleRevert(user, DEFAULT_ADMIN_ROLE);
+        wrap.forceSetNextExecutionIndex(newNextExecutionIndex);
+    }
+
+    function testForceSetNextExecutionIndex() public {
+        uint256 newNextExecutionIndex = wrap.nextExecutionIndex() + 1;
+        vm.prank(admin);
+        wrap.forceSetNextExecutionIndex(newNextExecutionIndex);
     }
 }

@@ -31,15 +31,6 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
         configureProtocolFees(_protocolFeeBPS);
     }
 
-    /// @inheritdoc IWrap
-    function accumulatedValidatorFees(
-        address token
-    ) public view virtual override(IWrap, Wrap) returns (uint256) {
-        return
-            IERC20MintBurn(token).balanceOf(address(this)) -
-            accumulatedProtocolFees[token];
-    }
-
     /// @inheritdoc Wrap
     function depositFees(
         uint256 amount

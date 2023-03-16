@@ -21,13 +21,6 @@ contract WrapDepositRedeem is IWrapDepositRedeem, Wrap {
         uint16 _validatorFeeBPS
     ) Wrap(config, _validatorFeeBPS) {}
 
-    /// @inheritdoc IWrap
-    function accumulatedValidatorFees(
-        address token
-    ) public view virtual override(IWrap, Wrap) returns (uint256) {
-        return IERC20(token).balanceOf(address(this));
-    }
-
     /// @inheritdoc Wrap
     function depositFees(uint256) internal pure override returns (uint256 fee) {
         return 0;
