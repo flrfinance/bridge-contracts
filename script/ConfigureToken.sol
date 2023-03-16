@@ -11,11 +11,13 @@ contract ConfigureToken is Script {
     address constant token = 0x767F3AB8900d8011856F18Da0Bf7cD46E85a429F;
     uint256 constant minAmount = 1e17;
     uint256 constant maxAmount = 1e24;
+    uint256 constant dailyLimit = 1e20;
 
     function run() external {
         IWrap.TokenInfo memory ti = IWrap.TokenInfo({
             maxAmount: maxAmount,
-            minAmount: minAmount
+            minAmount: minAmount,
+            dailyLimit: dailyLimit
         });
 
         vm.startBroadcast();
