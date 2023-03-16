@@ -30,11 +30,6 @@ library Multisig {
     /// to an apprroved request.
     error InvalidId();
 
-    /// @dev Thrown when an execution attempt is made for a
-    /// request that is too far in the future or has not been
-    /// approved yet.
-    error InvalidExecuteRequest();
-
     /// @dev Maximum number of members in each committee.
     /// @notice This number cannot be increased further
     /// with the current implementation. Our implementation
