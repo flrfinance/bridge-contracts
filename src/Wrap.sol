@@ -131,6 +131,22 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         _;
     }
 
+    /// @dev Modifier to make a function callable only when the recent block hash is valid.
+    modifier withValidRecentBlockHash(
+        bytes32 recentBlockHash,
+        uint256 recentBlockNumber
+    ) {
+        // Prevent malicious validators from pre-producing attestation signatures.
+        // `blockhash(recentBlockNumber)` yields `0x0` when `recentBlockNumber < block.number - 256`.
+        if (
+            recentBlockHash == bytes32(0) ||
+            blockhash(recentBlockNumber) != recentBlockHash
+        ) {
+            revert InvalidBlockHash();
+        }
+        _;
+    }
+
     /// @inheritdoc IWrap
     function nextExecutionIndex() external view returns (uint256) {
         return multisig.nextExecutionIndex;
@@ -173,8 +189,8 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         return keccak256(abi.encodePacked(id, token, amount, to));
     }
 
-    /// @inheritdoc IWrap
-    function approveExecute(
+    /// @dev Internal function to approve and/or execute a given request.
+    function _approveExecute(
         uint256 id,
         address mirrorToken,
         uint256 amount,
@@ -203,9 +219,25 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     }
 
     /// @inheritdoc IWrap
-    function batchApproveExecute(RequestInfo[] calldata requests) external {
+    function approveExecute(
+        uint256 id,
+        address mirrorToken,
+        uint256 amount,
+        address to,
+        bytes32 recentBlockHash,
+        uint256 recentBlockNumber
+    ) public withValidRecentBlockHash(recentBlockHash, recentBlockNumber) {
+        _approveExecute(id, mirrorToken, amount, to);
+    }
+
+    /// @inheritdoc IWrap
+    function batchApproveExecute(
+        RequestInfo[] calldata requests,
+        bytes32 recentBlockHash,
+        uint256 recentBlockNumber
+    ) external withValidRecentBlockHash(recentBlockHash, recentBlockNumber) {
         for (uint256 i = 0; i < requests.length; i++) {
-            approveExecute(
+            _approveExecute(
                 requests[i].id,
                 requests[i].token,
                 requests[i].amount,

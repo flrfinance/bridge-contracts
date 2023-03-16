@@ -29,6 +29,9 @@ interface IWrap is IAccessControlEnumerable {
     /// @dev Thrown when the recipient address is the zero address.
     error InvalidToAddress();
 
+    /// @dev Thrown when the provided blocknumber is not of the most recent 256 blocks.
+    error InvalidBlockHash();
+
     /// @dev Thrown when the daily volume exceeds the dailyLimit.
     error DailyLimitExhausted();
 
@@ -173,16 +176,24 @@ interface IWrap is IAccessControlEnumerable {
     /// @param token Token requested.
     /// @param amount Amount of tokens requested.
     /// @param to Address to release the funds to.
+    /// @param recentBlockhash Block hash of `recentBlocknumber`
+    /// @param recentBlocknumber Recent block number
     function approveExecute(
         uint256 id,
         address token,
         uint256 amount,
-        address to
+        address to,
+        bytes32 recentBlockhash,
+        uint256 recentBlocknumber
     ) external;
 
     /// @dev Approve and/or execute requests.
     /// @param requests Requests to approve and/or execute.
-    function batchApproveExecute(RequestInfo[] calldata requests) external;
+    function batchApproveExecute(
+        RequestInfo[] calldata requests,
+        bytes32 recentBlockhash,
+        uint256 recentBlocknumber
+    ) external;
 
     /// @dev Pauses the contract.
     /// @notice The contract can be paused by all addresses
