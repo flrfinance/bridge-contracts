@@ -1,4 +1,4 @@
-name: Phygital Redemptions CI
+name: FLRWrap CI
 
 on:
   push:

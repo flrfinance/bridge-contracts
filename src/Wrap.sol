@@ -27,7 +27,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     bool public paused;
 
     /// @dev Map token address to token info.
-    mapping(address => TokenInfoWithFees) public tokenInfos;
+    mapping(address => TokenInfoStore) public tokenInfos;
 
     /// @dev Map mirror token address to token address.
     mapping(address => address) public mirrorTokens;
@@ -97,7 +97,8 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
 
     /// @dev Modifier to make a function callable only when the token and amount is correct.
     modifier isValidTokenAmount(address token, uint256 amount) {
-        TokenInfoWithFees memory t = tokenInfos[token];
+        TokenInfoStore storage t = tokenInfos[token];
+
         // Notice that amount should be greater than minAmountWithFees.
         // This is required as amount after the fees should be greater
         // than minAmount so that when this is approved it passes the
@@ -105,12 +106,25 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         if (t.maxAmount <= amount || t.minAmountWithFees > amount) {
             revert InvalidTokenAmount();
         }
+
+        if (t.dailyLimit != 0) {
+            // Reset daily limit if the day is passed after last update.
+            if (block.timestamp > t.lastUpdated + 1 days) {
+                t.lastUpdated = block.timestamp;
+                t.consumedLimit = 0;
+            }
+
+            if (t.consumedLimit + amount > t.dailyLimit) {
+                revert DailyLimitExhausted();
+            }
+            t.consumedLimit += amount;
+        }
         _;
     }
 
     /// @dev Modifier to make a function callable only when the token and amount is correct.
     modifier isValidMirrorTokenAmount(address mirrorToken, uint256 amount) {
-        TokenInfoWithFees memory t = tokenInfos[mirrorTokens[mirrorToken]];
+        TokenInfoStore memory t = tokenInfos[mirrorTokens[mirrorToken]];
         if (t.maxAmount <= amount || t.minAmount > amount) {
             revert InvalidTokenAmount();
         }
@@ -236,6 +250,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         address token,
         uint256 minAmount,
         uint256 maxAmount,
+        uint256 dailyLimit,
         bool newToken
     ) internal {
         uint256 currMinAmount = tokenInfos[token].minAmount;
@@ -245,12 +260,17 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         ) {
             revert InvalidTokenConfig();
         }
-        TokenInfoWithFees memory tokenInfoWithFees = TokenInfoWithFees(
+
+        // configuring token also resets the daily volume limit
+        TokenInfoStore memory tokenInfoStore = TokenInfoStore(
             maxAmount,
             minAmount,
-            minAmount + depositFees(minAmount)
+            minAmount + depositFees(minAmount),
+            dailyLimit,
+            0,
+            block.timestamp
         );
-        tokenInfos[token] = tokenInfoWithFees;
+        tokenInfos[token] = tokenInfoStore;
     }
 
     /// @inheritdoc IWrap
@@ -262,6 +282,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
             token,
             tokenInfo.minAmount,
             tokenInfo.maxAmount,
+            tokenInfo.dailyLimit,
             false
         );
     }
@@ -293,6 +314,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
             token,
             tokenInfo.minAmount,
             tokenInfo.maxAmount,
+            tokenInfo.dailyLimit,
             true
         );
         tokens.push(token);

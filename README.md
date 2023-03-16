@@ -1,5 +1,6 @@
-# <h1 align="center"> Phygital Redemptions </h1>
-**Redeem physical items by burning ERC-721 & ERC-1155 tokens**
+# FLRWrap
+
+> A mint/burn bridge from EVM compatible chains to the Flare Network.
 
 ![Github Actions](https://github.com/flrfinance/flr-redeem/workflows/test/badge.svg)
 
