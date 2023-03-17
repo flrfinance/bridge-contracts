@@ -239,17 +239,20 @@ contract MultisigTest is TestAsserter, MultisigHelpers {
     function _testAddSigner(Committee committee) internal {
         uint8 initialFirstCommitteeSize = multisig.firstCommitteeSize;
         uint8 initialSecondCommitteeSize = multisig.secondCommitteeSize;
-        multisig.addSigner(signer, committee == Committee.First ? true : false);
+        bool isFirstCommittee = committee == Committee.First ? true : false;
+        vm.expectEmit(true, true, true, true);
+        emit Multisig.AddSigner(signer, isFirstCommittee);
+        multisig.addSigner(signer, isFirstCommittee);
 
         assertEq(
             multisig.firstCommitteeSize,
-            committee == Committee.First
+            isFirstCommittee
                 ? initialFirstCommitteeSize + 1
                 : initialFirstCommitteeSize
         );
         assertEq(
             multisig.secondCommitteeSize,
-            committee == Committee.Second
+            !isFirstCommittee
                 ? initialSecondCommitteeSize + 1
                 : initialSecondCommitteeSize
         );
@@ -257,7 +260,7 @@ contract MultisigTest is TestAsserter, MultisigHelpers {
         Multisig.SignerInfo memory signerInfo = multisig.signers[signer];
         _assertEq(
             signerInfo.status,
-            committee == Committee.First
+            isFirstCommittee
                 ? Multisig.SignerStatus.FirstCommittee
                 : Multisig.SignerStatus.SecondCommittee
         );
@@ -356,6 +359,8 @@ contract MultisigTest is TestAsserter, MultisigHelpers {
     function _testRemoveSigner(
         Committee committee
     ) internal withSigner(committee) {
+        vm.expectEmit(true, true, true, true);
+        emit Multisig.RemoveSigner(currentSigner);
         multisig.removeSigner(currentSigner);
         Multisig.SignerInfo memory signerInfo = multisig.signers[currentSigner];
         _assertEq(signerInfo.status, Multisig.SignerStatus.Removed);
