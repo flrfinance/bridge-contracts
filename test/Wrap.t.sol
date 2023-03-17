@@ -322,6 +322,39 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         assertEq(wrap.nextExecutionIndex(), 3);
     }
 
+    function testValidators() public withValidators {
+        address[] memory validators = wrap.validators();
+        assertEq(validators[0], validatorA);
+        assertEq(validators[1], validatorB);
+    }
+
+    function testValidatorInfo() public withValidators {
+        Multisig.SignerInfo memory signerInfoA = wrap.validatorInfo(validatorA);
+        _assertEq(signerInfoA.status, Multisig.SignerStatus.FirstCommittee);
+        assertEq(signerInfoA.index, 0);
+
+        Multisig.SignerInfo memory signerInfoB = wrap.validatorInfo(validatorB);
+        _assertEq(signerInfoB.status, Multisig.SignerStatus.SecondCommittee);
+        assertEq(signerInfoB.index, 1);
+    }
+
+    function testAttesters() public withToken withValidators {
+        uint256 amount = tokenInfo.minAmount + 1;
+        uint256 requestId = _executeApproveExecute(amount, user);
+        bytes32 hash = wrap.exposed_hashRequest(
+            requestId,
+            mirrorToken,
+            amount,
+            user
+        );
+        uint16[] memory expectedAttesters = new uint16[](2);
+        expectedAttesters[0] = 0;
+        expectedAttesters[1] = 1;
+        (uint16[] memory attesters, uint16 count) = wrap.attesters(hash);
+        assertEq(count, 2);
+        _assertEq(attesters, expectedAttesters);
+    }
+
     function testCalculateFee() public {
         uint256 amount = 1337;
         uint16 feeBPS = 500;

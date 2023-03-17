@@ -114,6 +114,7 @@ library Multisig {
         mapping(address => SignerInfo) signers;
         mapping(bytes32 => Request) requests;
         mapping(uint256 => bytes32) approvedRequests;
+        address[] signerAddresses;
     }
 
     /// @param firstCommitteeAcceptanceQuorum Number of acceptances
@@ -195,6 +196,8 @@ library Multisig {
             s.secondCommitteeSize++;
             signerInfo.status = SignerStatus.SecondCommittee;
         }
+
+        s.signerAddresses.push(signer);
     }
 
     /// @dev Removes a signer.

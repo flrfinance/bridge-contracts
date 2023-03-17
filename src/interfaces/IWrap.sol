@@ -130,6 +130,19 @@ interface IWrap is IAccessControlEnumerable {
     /// @dev Returns the index of the request that will be executed next.
     function nextExecutionIndex() external view returns (uint256);
 
+    /// @dev Returns the addresses of the validators.
+    function validators() external view returns (address[] memory);
+
+    /// @dev Returns info about a given validator.
+    function validatorInfo(
+        address validator
+    ) external view returns (Multisig.SignerInfo memory);
+
+    /// @dev Returns the number of attesters and their indeces for a given request hash.
+    function attesters(
+        bytes32 hash
+    ) external view returns (uint16[] memory attesters, uint16 count);
+
     /// @dev Returns the validator fee basis points.
     function validatorFeeBPS() external view returns (uint16);
 

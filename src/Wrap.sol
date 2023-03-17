@@ -150,6 +150,25 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         return multisig.nextExecutionIndex;
     }
 
+    /// @inheritdoc IWrap
+    function validators() external view returns (address[] memory) {
+        return multisig.signerAddresses;
+    }
+
+    /// @inheritdoc IWrap
+    function validatorInfo(
+        address validator
+    ) external view returns (Multisig.SignerInfo memory) {
+        return multisig.signers[validator];
+    }
+
+    /// @inheritdoc IWrap
+    function attesters(
+        bytes32 hash
+    ) external view returns (uint16[] memory attesters, uint16 count) {
+        return multisig.getApprovers(hash);
+    }
+
     /// @dev Internal function to calculate fees by amount and BPS.
     function calculateFee(
         uint256 amount,
