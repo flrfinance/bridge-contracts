@@ -322,12 +322,6 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         assertEq(wrap.nextExecutionIndex(), 3);
     }
 
-    function testValidators() public withValidators {
-        address[] memory validators = wrap.validators();
-        assertEq(validators[0], validatorA);
-        assertEq(validators[1], validatorB);
-    }
-
     function testValidatorInfo() public withValidators {
         Multisig.SignerInfo memory signerInfoA = wrap.validatorInfo(validatorA);
         _assertEq(signerInfoA.status, Multisig.SignerStatus.FirstCommittee);

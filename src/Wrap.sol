@@ -151,11 +151,6 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     }
 
     /// @inheritdoc IWrap
-    function validators() external view returns (address[] memory) {
-        return multisig.signerAddresses;
-    }
-
-    /// @inheritdoc IWrap
     function validatorInfo(
         address validator
     ) external view returns (Multisig.SignerInfo memory) {
