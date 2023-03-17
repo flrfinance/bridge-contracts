@@ -31,6 +31,17 @@ library Multisig {
     /// greater equal to the new next execution index.
     error InvalidNextExecutionIndex();
 
+    /// @dev Emitted when a new signer is added.
+    /// @param signer Address of signer that was added.
+    /// @param isFirstCommittee True if the signer was
+    /// added to the first committee and false if they were
+    /// added to the second committee.
+    event AddSigner(address signer, bool isFirstCommittee);
+
+    /// @dev Emitted when an existing signer is removed.
+    /// @param signer Address of signer that was removed.
+    event RemoveSigner(address signer);
+
     /// @dev Maximum number of members in each committee.
     /// @notice This number cannot be increased further
     /// with the current implementation. Our implementation
@@ -195,6 +206,8 @@ library Multisig {
             s.secondCommitteeSize++;
             signerInfo.status = SignerStatus.SecondCommittee;
         }
+
+        emit AddSigner(signer, isFirstCommittee);
     }
 
     /// @dev Removes a signer.
@@ -206,6 +219,7 @@ library Multisig {
             revert SignerNotActive(signer);
         }
         signerInfo.status = SignerStatus.Removed;
+        emit RemoveSigner(signer);
     }
 
     /// @dev Approve a request if its has not already been approved.
