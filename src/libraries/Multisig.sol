@@ -36,11 +36,11 @@ library Multisig {
     /// @param isFirstCommittee True if the signer was
     /// added to the first committee and false if they were
     /// added to the second committee.
-    event AddSigner(address signer, bool isFirstCommittee);
+    event AddSigner(address indexed signer, bool indexed isFirstCommittee);
 
     /// @dev Emitted when an existing signer is removed.
     /// @param signer Address of signer that was removed.
-    event RemoveSigner(address signer);
+    event RemoveSigner(address indexed signer);
 
     /// @dev Maximum number of members in each committee.
     /// @notice This number cannot be increased further
