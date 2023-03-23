@@ -79,7 +79,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     /// @param amount The amount being bridged.
     /// @param to The address where the bridged are being sent to.
     /// @return fee Total fee charged to the user.
-    /// @return validatorFee total fee minus the protocol fees.
+    /// @return validatorFee Total fee minus the protocol fees.
     function onExecute(
         address token,
         uint256 amount,
@@ -102,8 +102,8 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         // This is required as amount after the fees should be greater
         // than minAmount so that when this is approved it passes the
         // isValidMirrorTokenAmount check.
-        // Notice that t.maxAmount is 0 for non existant and disabled token.
-        // Therefore this check also makes sure txs of such tokens are reverted.
+        // Notice that t.maxAmount is 0 for non existent and disabled tokens.
+        // Therefore, this check also ensures txs of such tokens are reverted.
         if (t.maxAmount <= amount || t.minAmountWithFees > amount) {
             revert InvalidTokenAmount();
         }
