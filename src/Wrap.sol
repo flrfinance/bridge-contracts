@@ -163,7 +163,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     /// @inheritdoc IWrap
     function attesters(
         bytes32 hash
-    ) external view returns (uint16[] memory attesters, uint16 count) {
+    ) external view returns (uint16[] memory attesterIndexes, uint16 count) {
         return multisig.getApprovers(hash);
     }
 
