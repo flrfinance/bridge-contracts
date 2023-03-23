@@ -47,13 +47,14 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
 
     event Requested(
         uint256 indexed id,
-        address indexed token,
+        address indexed mirrorToken,
         uint256 amount,
         address to
     );
 
     event Executed(
         uint256 indexed id,
+        address indexed mirrorToken,
         address indexed token,
         uint256 amount,
         address to,
@@ -172,7 +173,7 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         returns (uint256 requestId)
     {
         requestId = wrap.nextExecutionIndex();
-        uint256 fee = _onExecuteFee(amount);
+        (uint256 fee, ) = _onExecuteFee(amount);
         vm.prank(validatorA);
         wrap.approveExecute(
             requestId,
@@ -426,17 +427,20 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         );
 
         // TODO: Create helper function
-        uint256 feeToValidator = _onExecuteFee(1000) / 2;
+        (, uint256 validatorFee) = _onExecuteFee(1000);
+        uint256 feeToValidator = validatorFee / 2;
         _executeApproveExecute(1000, user);
         expectedValidatorAFeeBalance += feeToValidator;
         expectedValidatorBFeeBalance += feeToValidator;
 
-        feeToValidator = _onExecuteFee(2000) / 2;
+        (, validatorFee) = _onExecuteFee(2000);
+        feeToValidator = validatorFee / 2;
         _executeApproveExecute(2000, user);
         expectedValidatorAFeeBalance += feeToValidator;
         expectedValidatorBFeeBalance += feeToValidator;
 
-        feeToValidator = _onExecuteFee(3000) / 2;
+        (, validatorFee) = _onExecuteFee(3000);
+        feeToValidator = validatorFee / 2;
         _executeApproveExecute(3000, user);
         expectedValidatorAFeeBalance += feeToValidator;
         expectedValidatorBFeeBalance += feeToValidator;
@@ -788,7 +792,9 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         uint256 totalFees
     ) internal virtual;
 
-    function _onExecuteFee(uint256 amount) internal virtual returns (uint256);
+    function _onExecuteFee(
+        uint256 amount
+    ) internal virtual returns (uint256 fee, uint256 validatorFee);
 
     // Custodian should transfer amount to recipient
     // on WrapDepositRedeemCustodian
@@ -826,7 +832,7 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
             initialCustodianBalance
         );
 
-        uint256 fee = _onExecuteFee(amount);
+        (uint256 fee, uint256 validatorFee) = _onExecuteFee(amount);
 
         _onExecutePerformExternalAction(token, amount, user, fee);
 
@@ -865,7 +871,7 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
             assertEq(approvers[1], validatorBIndex);
         }
 
-        uint256 feeToValidator = fee / 2;
+        uint256 feeToValidator = validatorFee / 2;
         assertEq(wrap.feeBalance(token, validatorAIndex), feeToValidator);
         assertEq(wrap.feeBalance(token, validatorBIndex), feeToValidator);
 
@@ -1234,7 +1240,7 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         uint256 totalFees = 0;
         for (uint256 i = 0; i < requests.length; i++) {
             IWrap.RequestInfo memory request = requests[i];
-            uint256 fee = _onExecuteFee(request.amount);
+            (uint256 fee, ) = _onExecuteFee(request.amount);
             totalFees += fee;
             _onExecutePerformExternalAction(
                 token,

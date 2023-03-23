@@ -82,8 +82,12 @@ contract WrapDepositRedeemTest is WrapTest {
 
     function _onExecuteFee(
         uint256 amount
-    ) internal virtual override returns (uint256) {
-        return wrap.exposed_calculateFee(amount, validatorFeeBPS);
+    ) internal virtual override returns (uint256, uint256) {
+        uint256 validatorFee = wrap.exposed_calculateFee(
+            amount,
+            validatorFeeBPS
+        );
+        return (validatorFee, validatorFee);
     }
 
     function _onExecutePerformExternalAction(
@@ -103,13 +107,20 @@ contract WrapDepositRedeemTest is WrapTest {
         withMintedTokens(address(wrap), amount)
     {
         uint256 initialRecipientBalance = IERC20(token).balanceOf(user);
-        uint256 fee = wrap.exposed_calculateFee(amount, validatorFeeBPS);
+        uint256 expectedFee = wrap.exposed_calculateFee(
+            amount,
+            validatorFeeBPS
+        );
+        uint256 expectedValidatorFee = expectedFee;
         vm.expectEmit(true, true, true, true, token);
-        emit Transfer(address(wrap), user, amount - fee);
-        assertEq(wrap.exposed_onExecute(token, amount, user), fee);
+        emit Transfer(address(wrap), user, amount - expectedFee);
+        (uint256 actualFee, uint256 actualValidatorFee) = wrap
+            .exposed_onExecute(token, amount, user);
+        assertEq(actualFee, expectedFee);
+        assertEq(actualValidatorFee, expectedValidatorFee);
         assertEq(
             IERC20(token).balanceOf(user),
-            initialRecipientBalance + (amount - fee)
+            initialRecipientBalance + (amount - expectedFee)
         );
     }
 
@@ -180,7 +191,7 @@ contract WrapDepositRedeemTest is WrapTest {
         vm.expectEmit(true, true, true, true, token);
         emit Transfer(address(wrap), recipient, amount - fee);
         vm.expectEmit(true, true, true, true, address(wrap));
-        emit Executed(id, token, amount - fee, recipient, fee);
+        emit Executed(id, mirrorToken, token, amount - fee, recipient, fee);
     }
 
     function _expectApproveExecuteFinalCustodianBalance(
