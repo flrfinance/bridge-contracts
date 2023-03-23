@@ -55,13 +55,13 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
         address token,
         uint256 amount,
         address to
-    ) internal override returns (uint256 fee, uint256 validatorFee) {
+    ) internal override returns (uint256 totalFee, uint256 validatorFee) {
         uint256 protocolFee = calculateFee(amount, protocolFeeBPS);
         accumulatedProtocolFees[token] += protocolFee;
         validatorFee = calculateFee(amount, validatorFeeBPS);
-        fee = protocolFee + validatorFee;
-        IERC20MintBurn(token).mint(to, amount - fee);
-        IERC20MintBurn(token).mint(address(this), fee);
+        totalFee = protocolFee + validatorFee;
+        IERC20MintBurn(token).mint(to, amount - totalFee);
+        IERC20MintBurn(token).mint(address(this), totalFee);
     }
 
     /// @inheritdoc IWrapMintBurn

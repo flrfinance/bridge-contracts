@@ -40,9 +40,14 @@ contract WrapDepositRedeem is IWrapDepositRedeem, Wrap {
         address token,
         uint256 amount,
         address to
-    ) internal virtual override returns (uint256 fee, uint256 validatorFee) {
-        fee = validatorFee = calculateFee(amount, validatorFeeBPS);
-        IERC20(token).safeTransfer(to, amount - fee);
+    )
+        internal
+        virtual
+        override
+        returns (uint256 totalFee, uint256 validatorFee)
+    {
+        totalFee = validatorFee = calculateFee(amount, validatorFeeBPS);
+        IERC20(token).safeTransfer(to, amount - totalFee);
     }
 
     /// @inheritdoc IWrapDepositRedeem

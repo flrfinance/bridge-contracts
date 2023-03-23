@@ -78,13 +78,13 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     /// @param token Address of the token being bridged.
     /// @param amount The amount being bridged.
     /// @param to The address where the bridged are being sent to.
-    /// @return fee Total fee charged to the user.
+    /// @return totalFee Total fee charged to the user.
     /// @return validatorFee Total fee minus the protocol fees.
     function onExecute(
         address token,
         uint256 amount,
         address to
-    ) internal virtual returns (uint256 fee, uint256 validatorFee);
+    ) internal virtual returns (uint256 totalFee, uint256 validatorFee);
 
     /// @dev Modifier to make a function callable only when the contract is not paused.
     modifier isNotPaused() {
@@ -228,19 +228,19 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
 
         if (multisig.tryExecute(hash, id)) {
             address token = mirrorTokens[mirrorToken];
-            (uint256 totalFee, uint256 totalValidatorFee) = onExecute(
+            (uint256 totalFee, uint256 validatorFee) = onExecute(
                 token,
                 amount,
                 to
             );
             {
-                (uint16[] memory approvers, uint16 count) = multisig
+                (uint16[] memory approvers, uint16 approverCount) = multisig
                     .getApprovers(hash);
-                uint256 feeToValidator = totalValidatorFee / count;
+                uint256 feeToIndividualValidator = validatorFee / approverCount;
                 mapping(uint256 => uint256)
                     storage tokenFeeBalance = feeBalance[token];
-                for (uint16 i = 0; i < count; i++) {
-                    tokenFeeBalance[approvers[i]] += feeToValidator;
+                for (uint16 i = 0; i < approverCount; i++) {
+                    tokenFeeBalance[approvers[i]] += feeToIndividualValidator;
                 }
             }
             emit Executed(
