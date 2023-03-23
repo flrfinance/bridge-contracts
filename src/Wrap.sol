@@ -78,12 +78,13 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     /// @param token Address of the token being bridged.
     /// @param amount The amount being bridged.
     /// @param to The address where the bridged are being sent to.
-    /// @return fee The fee charged to the user.
+    /// @return fee Total fee charged to the user.
+    /// @return validatorFee total fee minus the protocol fees.
     function onExecute(
         address token,
         uint256 amount,
         address to
-    ) internal virtual returns (uint256 fee);
+    ) internal virtual returns (uint256 fee, uint256 validatorFee);
 
     /// @dev Modifier to make a function callable only when the contract is not paused.
     modifier isNotPaused() {
@@ -101,6 +102,8 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         // This is required as amount after the fees should be greater
         // than minAmount so that when this is approved it passes the
         // isValidMirrorTokenAmount check.
+        // Notice that t.maxAmount is 0 for non existant and disabled token.
+        // Therefore this check also makes sure txs of such tokens are reverted.
         if (t.maxAmount <= amount || t.minAmountWithFees > amount) {
             revert InvalidTokenAmount();
         }
@@ -207,7 +210,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         address mirrorToken,
         uint256 amount,
         address to
-    ) public isNotPaused isValidMirrorTokenAmount(mirrorToken, amount) {
+    ) private isNotPaused isValidMirrorTokenAmount(mirrorToken, amount) {
         // If the request ID is lower than the last executed ID then simply ignore the request.
         if (id < multisig.nextExecutionIndex) {
             return;
@@ -225,18 +228,29 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
 
         if (multisig.tryExecute(hash, id)) {
             address token = mirrorTokens[mirrorToken];
-            uint256 fee = onExecute(token, amount, to);
+            (uint256 totalFee, uint256 totalValidatorFee) = onExecute(
+                token,
+                amount,
+                to
+            );
             {
                 (uint16[] memory approvers, uint16 count) = multisig
                     .getApprovers(hash);
-                uint256 feeToValidator = fee / count;
+                uint256 feeToValidator = totalValidatorFee / count;
                 mapping(uint256 => uint256)
                     storage tokenFeeBalance = feeBalance[token];
                 for (uint16 i = 0; i < count; i++) {
                     tokenFeeBalance[approvers[i]] += feeToValidator;
                 }
             }
-            emit Executed(id, token, amount - fee, to, fee);
+            emit Executed(
+                id,
+                mirrorToken,
+                token,
+                amount - totalFee,
+                to,
+                totalFee
+            );
         }
     }
 

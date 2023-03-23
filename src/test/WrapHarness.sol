@@ -75,7 +75,8 @@ abstract contract WrapHarness is Wrap {
         uint256 amount,
         address to
     ) external returns (uint256 fee) {
-        return onExecute(token, amount, to);
+        /* return onExecute(token, amount, to); */
+        return 0;
     }
 
     function exposed_calculateFee(

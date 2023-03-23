@@ -51,24 +51,26 @@ interface IWrap is IAccessControlEnumerable {
 
     /// @dev Emitted when a new request is created.
     /// @param id ID associated with the request.
-    /// @param token Token requested.
+    /// @param mirrorToken Mirror token requested.
     /// @param amount Amount of tokens requested.
     /// @param to Address to release the funds to.
     event Requested(
         uint256 indexed id,
-        address indexed token,
+        address indexed mirrorToken,
         uint256 amount,
         address to
     );
 
     /// @dev Emitted when a request gets executed.
     /// @param id ID associated with the request.
+    /// @param mirrorToken Mirror token requested.
     /// @param token Token approved.
-    /// @param amount Amount approved (amount of token received by recipient address + fee).
+    /// @param amount Amount approved, minus the fee.
     /// @param to Address to release the funds to.
     /// @param fee Fee charged on top of the approved amount.
     event Executed(
         uint256 indexed id,
+        address indexed mirrorToken,
         address indexed token,
         uint256 amount,
         address to,
