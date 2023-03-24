@@ -262,7 +262,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         address to,
         bytes32 recentBlockHash,
         uint256 recentBlockNumber
-    ) public withValidRecentBlockHash(recentBlockHash, recentBlockNumber) {
+    ) external withValidRecentBlockHash(recentBlockHash, recentBlockNumber) {
         _approveExecute(id, mirrorToken, amount, to);
     }
 
