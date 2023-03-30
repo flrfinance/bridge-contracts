@@ -19,6 +19,8 @@ contract Constants {
         "SecondCommittee"
     ];
 
+    uint16 constant PROTOCOL_FEES = 50;
+
     constructor() {
         uint16 index = 0;
 
