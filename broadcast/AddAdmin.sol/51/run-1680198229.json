@@ -1,0 +1,34 @@
+{
+  "transactions": [
+    {
+      "hash": "0x9d25d0d3c2ebcccc4f77c6b4a548ec2e3f7d69854cef1e8f29539ec906aba121",
+      "transactionType": "CALL",
+      "contractName": null,
+      "contractAddress": "0x309dE78df92208FABFa2F8202efb8395Ee20890D",
+      "function": null,
+      "arguments": null,
+      "rpc": "https://erpc.apothem.network",
+      "transaction": {
+        "type": "0x00",
+        "from": "0x0e06d7f60ac1d71492436f1eb1880e7fe47373cc",
+        "to": "0x309de78df92208fabfa2f8202efb8395ee20890d",
+        "gas": "0x24081",
+        "value": "0x0",
+        "data": "0x2f2ff15d00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006ae9b98cb0bfe5fbb5659d77c6c6249225639617",
+        "nonce": "0x78"
+      },
+      "additionalContracts": []
+    }
+  ],
+  "receipts": [],
+  "libraries": [],
+  "pending": [
+    "0x9d25d0d3c2ebcccc4f77c6b4a548ec2e3f7d69854cef1e8f29539ec906aba121"
+  ],
+  "path": "/flr-wraps-contracts/broadcast/AddAdmin.sol/51/run-latest.json",
+  "returns": {},
+  "timestamp": 1680198229,
+  "chain": 51,
+  "multi": false,
+  "commit": "76dc033"
+}

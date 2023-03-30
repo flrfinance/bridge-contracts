@@ -1,0 +1,35 @@
+{
+  "transactions": [
+    {
+      "hash": "0x35a82f12ced206ee149769dc39a79c4f77c11bae2f641caddb4800fa3a80da67",
+      "transactionType": "CALL",
+      "contractName": null,
+      "contractAddress": "0x1263356C4f6278210B8ae900c7Ab749550bFbc8e",
+      "function": null,
+      "arguments": null,
+      "rpc": "https://coston-api.flare.network/ext/bc/C/rpc",
+      "transaction": {
+        "type": "0x02",
+        "from": "0x0e06d7f60ac1d71492436f1eb1880e7fe47373cc",
+        "to": "0x1263356c4f6278210b8ae900c7ab749550bfbc8e",
+        "gas": "0x24081",
+        "value": "0x0",
+        "data": "0x2f2ff15d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000790a87f4be79a00a65f879aa0b8d25074fd42110",
+        "nonce": "0x49",
+        "accessList": []
+      },
+      "additionalContracts": []
+    }
+  ],
+  "receipts": [],
+  "libraries": [],
+  "pending": [
+    "0x35a82f12ced206ee149769dc39a79c4f77c11bae2f641caddb4800fa3a80da67"
+  ],
+  "path": "/flr-wraps-contracts/broadcast/AddAdmin.sol/16/run-latest.json",
+  "returns": {},
+  "timestamp": 1680198328,
+  "chain": 16,
+  "multi": false,
+  "commit": "76dc033"
+}
