@@ -1,0 +1,35 @@
+{
+  "transactions": [
+    {
+      "hash": "0xad26f55b7a0b55315e1e329cd39f0f82b063a636c790fb64b93d8f26acc79684",
+      "transactionType": "CALL",
+      "contractName": null,
+      "contractAddress": "0x1263356C4f6278210B8ae900c7Ab749550bFbc8e",
+      "function": null,
+      "arguments": null,
+      "rpc": "https://coston-api.flare.network/ext/bc/C/rpc",
+      "transaction": {
+        "type": "0x02",
+        "from": "0x0e06d7f60ac1d71492436f1eb1880e7fe47373cc",
+        "to": "0x1263356c4f6278210b8ae900c7ab749550bfbc8e",
+        "gas": "0x27ece",
+        "value": "0x0",
+        "data": "0x2f2ff15dfcb9fcbfa83b897fb2d5cf4b58962164105c1e71489a37ef3ae0db3fdce576f6000000000000000000000000aef52ba3119ee28695e5aaa0788f11015e1dad46",
+        "nonce": "0x48",
+        "accessList": []
+      },
+      "additionalContracts": []
+    }
+  ],
+  "receipts": [],
+  "libraries": [],
+  "pending": [
+    "0xad26f55b7a0b55315e1e329cd39f0f82b063a636c790fb64b93d8f26acc79684"
+  ],
+  "path": "/flr-wraps-contracts/broadcast/AddPauser.sol/16/run-latest.json",
+  "returns": {},
+  "timestamp": 1680197037,
+  "chain": 16,
+  "multi": false,
+  "commit": "8ad1bdc"
+}
