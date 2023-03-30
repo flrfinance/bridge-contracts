@@ -4,8 +4,9 @@ pragma solidity ^0.8.15;
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
 import "../src/interfaces/IWrap.sol";
+import "./utils/Constants.sol";
 
-contract RemoveValidator is Script {
+contract RemoveValidator is Script, Constants {
     address constant wrap = APOTHEM;
     //address constant wrap = COSTON;
 
