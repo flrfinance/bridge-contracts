@@ -19,8 +19,8 @@ contract WhitelistWrap is Script {
 
     function run() external {
         IWrap.TokenInfo memory ti = IWrap.TokenInfo(
-            minAmount,
             maxAmount,
+            minAmount,
             dailyLimit
         );
 
