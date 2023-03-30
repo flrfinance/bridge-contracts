@@ -404,7 +404,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         address feeRecipient = validatorFeeRecipients[validator];
 
         if (feeRecipient == address(0)) {
-            revert InvalidToAddress();
+            revert InvalidFeeRecipient();
         }
 
         uint16 index = multisig.signers[validator].index;

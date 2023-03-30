@@ -415,7 +415,7 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
     {
         vm.prank(user);
         address nonValidator = address(0x1234);
-        vm.expectRevert(IWrap.InvalidToAddress.selector);
+        vm.expectRevert(IWrap.InvalidFeeRecipient.selector);
         wrap.claimValidatorFees(nonValidator);
     }
 
