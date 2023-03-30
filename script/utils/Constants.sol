@@ -6,7 +6,7 @@ contract Constants {
     address constant COSTON = 0x1263356C4f6278210B8ae900c7Ab749550bFbc8e;
 
     address constant WXDC_APOTHEM = 0xE99500AB4A413164DA49Af83B9824749059b46ce;
-    address constant WXDC_COSTON = 0x597126dFb13dFD877130Cb83d73088a21a209BE9;
+    address constant WXDC_COSTON = 0x2460Ebd7b0a4B019ebCE6bcF5a2F213BCdF10f48;
 
     address[] validators = new address[](5);
     address[] validatorFeeRecipients = new address[](5);
