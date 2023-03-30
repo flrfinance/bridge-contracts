@@ -7,8 +7,9 @@ import "../src/interfaces/IWrap.sol";
 import "./utils/Constants.sol";
 
 contract AddAllValidators is Script, Constants {
-    //address constant wrap = APOTHEM;
-    address constant wrap = COSTON;
+    address constant wrap = APOTHEM;
+
+    //address constant wrap = COSTON;
 
     function run() external {
         vm.startBroadcast();
@@ -18,11 +19,11 @@ contract AddAllValidators is Script, Constants {
             );
             console.log("Adding validator %s", validators[i]);
             console.log("Fee Recipient: %s:", validatorFeeRecipients[i]);
-            console.log("Is first commitee: %s:", isFirstCommittee[i]);
+            console.log("Is first commitee: %s:", isFirstCommittees[i]);
 
             IWrap(wrap).addValidator(
                 validators[i],
-                isFirstCommittee[i],
+                isFirstCommittees[i],
                 validatorFeeRecipients[i]
             );
         }

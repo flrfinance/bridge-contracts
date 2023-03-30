@@ -7,7 +7,7 @@ contract Constants {
 
     address[] validators = new address[](5);
     address[] validatorFeeRecipients = new address[](5);
-    bool[] isFirstCommittee = new bool[](5);
+    bool[] isFirstCommittees = new bool[](5);
 
     constructor() {
         uint16 index = 0;
@@ -17,7 +17,7 @@ contract Constants {
         validatorFeeRecipients[
             index
         ] = 0x0e06d7f60Ac1D71492436F1EB1880E7FE47373Cc;
-        isFirstCommittee[index] = true;
+        isFirstCommittees[index] = true;
 
         index++;
 
@@ -26,7 +26,7 @@ contract Constants {
         validatorFeeRecipients[
             index
         ] = 0x2DD97AE3FE5665e489F09B1cc20605a31dEF42f5;
-        isFirstCommittee[index] = true;
+        isFirstCommittees[index] = true;
 
         index++;
 
@@ -35,7 +35,7 @@ contract Constants {
         validatorFeeRecipients[
             index
         ] = 0x96237903B1b2dc557c3F3a4B9FBF942DefEBF75d;
-        isFirstCommittee[index] = false;
+        isFirstCommittees[index] = false;
 
         index++;
 
@@ -44,7 +44,7 @@ contract Constants {
         validatorFeeRecipients[
             index
         ] = 0xaE5886e943153f8285F93AfE144B58079dEaC927;
-        isFirstCommittee[index] = false;
+        isFirstCommittees[index] = false;
 
         index++;
 
@@ -53,6 +53,6 @@ contract Constants {
         validatorFeeRecipients[
             index
         ] = 0xA7eA9Da13797F0965AD45CA25A3a19f9B85fb821;
-        isFirstCommittee[index] = false;
+        isFirstCommittees[index] = false;
     }
 }
