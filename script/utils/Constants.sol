@@ -2,8 +2,8 @@
 pragma solidity ^0.8.15;
 
 contract Constants {
-    address constant APOTHEM = 0x673b27A6818F7E9BDD54bF1103dB4D996aE11252;
-    address constant COSTON = 0x65fD1532A09be6927121C402c6c3D7fD4a36DA1E;
+    address constant APOTHEM = 0x309dE78df92208FABFa2F8202efb8395Ee20890D;
+    address constant COSTON = 0x1263356C4f6278210B8ae900c7Ab749550bFbc8e;
 
     address constant WXDC_APOTHEM = 0xE99500AB4A413164DA49Af83B9824749059b46ce;
     address constant WXDC_COSTON = 0x597126dFb13dFD877130Cb83d73088a21a209BE9;
