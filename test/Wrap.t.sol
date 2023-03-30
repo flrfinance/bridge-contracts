@@ -512,6 +512,53 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         );
     }
 
+    function testClaimValidatorFeesForRemovedValidator()
+        public
+        withToken
+        withValidators
+    {
+        uint8 validatorAIndex = wrap
+            .exposed_multisigSignerInfo(validatorA)
+            .index;
+
+        uint256 expectedValidatorAFeeBalance = wrap.feeBalance(
+            token,
+            validatorAIndex
+        );
+
+        (, uint256 validatorFee) = _onExecuteFee(1000);
+        _executeApproveExecute(1000, user);
+        expectedValidatorAFeeBalance += validatorFee / 2;
+
+        uint256 initialValidatorABalance = IERC20(token).balanceOf(
+            validatorAFeeRecipient
+        );
+
+        assertEq(
+            wrap.feeBalance(token, validatorAIndex),
+            expectedValidatorAFeeBalance
+        );
+
+        vm.prank(admin);
+        wrap.removeValidator(validatorA);
+
+        vm.prank(user);
+        vm.expectEmit(true, true, true, true, token);
+        emit Transfer(
+            address(wrap),
+            validatorAFeeRecipient,
+            expectedValidatorAFeeBalance
+        );
+        wrap.claimValidatorFees(validatorA);
+
+        assertEq(wrap.feeBalance(token, validatorAIndex), 0);
+
+        assertEq(
+            IERC20(token).balanceOf(validatorAFeeRecipient),
+            initialValidatorABalance + expectedValidatorAFeeBalance
+        );
+    }
+
     function _expectDepositEvents(
         uint256 depositIndex,
         address token,
