@@ -409,6 +409,17 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         wrap.configureValidatorFeeRecipient(validatorB, address(1717));
     }
 
+    function testClaimValidatorFeesRevertsIfAddressNotInRecipient()
+        public
+        withToken
+        withValidators
+    {
+        vm.prank(user);
+        (address random, ) = makeAddrAndKey("random");
+        vm.expectRevert(IWrap.InvalidToAddress.selector);
+        wrap.claimValidatorFees(random);
+    }
+
     function testClaimValidatorFees() public withToken withValidators {
         uint8 validatorAIndex = wrap
             .exposed_multisigSignerInfo(validatorA)
