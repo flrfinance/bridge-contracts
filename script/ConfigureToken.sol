@@ -13,7 +13,7 @@ contract ConfigureToken is Script, Constants {
     address constant token = WXDC_APOTHEM;
     //address constant token = WXDC_COSTON;
 
-    uint256 constant minAmount = 1e17;
+    uint256 constant minAmount = 1e18;
     uint256 constant maxAmount = 1e24;
     uint256 constant dailyLimit = 1e20;
 
