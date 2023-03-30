@@ -12,6 +12,13 @@ contract Constants {
     address[] validatorFeeRecipients = new address[](5);
     bool[] isFirstCommittees = new bool[](5);
 
+    string[5] VALIDATOR_STATUS = [
+        "Uninitialized",
+        "Removed",
+        "FirstCommittee",
+        "SecondCommittee"
+    ];
+
     constructor() {
         uint16 index = 0;
 
