@@ -4,13 +4,16 @@ pragma solidity ^0.8.15;
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
 import "../src/interfaces/IWrap.sol";
+import "./utils/Constants.sol";
 
-contract AddValidator is Script {
-    address constant wrap = 0x9550c9651b681Ce9FE1f3D8c416F785e6350274c;
-    address constant validator = 0xBb0d20CC598E4d34A7eF50d4B55cd43850048c23;
+contract AddValidator is Script, Constants {
+    address constant wrap = APOTHEM;
+    //address constant wrap = COSTON;
+
+    address constant validator = 0x20FDcb0063d6fDf51E38727907e43FC592aA827f;
     address constant validatorFeeRecipient =
-        0x517C4821D3774F6DBCcB6D016BfB2FC3712048D4;
-    bool isFirstCommittee = true;
+        0xA7eA9Da13797F0965AD45CA25A3a19f9B85fb821;
+    bool isFirstCommittee = false;
 
     function run() external {
         vm.startBroadcast();
