@@ -35,6 +35,9 @@ interface IWrap is IAccessControlEnumerable {
     /// @dev Thrown when the daily volume exceeds the dailyLimit.
     error DailyLimitExhausted();
 
+    /// @dev Thrown when the fee recipient address is the zero address.
+    error InvalidFeeRecipient();
+
     /// @dev Emitted when a user deposits.
     /// @param id ID associated with the request.
     /// @param token Token deposited.

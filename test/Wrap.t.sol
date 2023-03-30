@@ -409,6 +409,16 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         wrap.configureValidatorFeeRecipient(validatorB, address(1717));
     }
 
+    function testClaimValidatorFeesRevertsWithNonValidatorAddress()
+        public
+        withToken
+    {
+        vm.prank(user);
+        address nonValidator = address(0x1234);
+        vm.expectRevert(IWrap.InvalidFeeRecipient.selector);
+        wrap.claimValidatorFees(nonValidator);
+    }
+
     function testClaimValidatorFees() public withToken withValidators {
         uint8 validatorAIndex = wrap
             .exposed_multisigSignerInfo(validatorA)
@@ -498,6 +508,53 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
             IERC20(token).balanceOf(_custodian()),
             initialCustodianBalance -
                 (expectedValidatorAFeeBalance + expectedValidatorBFeeBalance)
+        );
+    }
+
+    function testClaimValidatorFeesForRemovedValidator()
+        public
+        withToken
+        withValidators
+    {
+        uint8 validatorAIndex = wrap
+            .exposed_multisigSignerInfo(validatorA)
+            .index;
+
+        uint256 expectedValidatorAFeeBalance = wrap.feeBalance(
+            token,
+            validatorAIndex
+        );
+
+        (, uint256 validatorFee) = _onExecuteFee(1000);
+        _executeApproveExecute(1000, user);
+        expectedValidatorAFeeBalance += validatorFee / 2;
+
+        uint256 initialValidatorABalance = IERC20(token).balanceOf(
+            validatorAFeeRecipient
+        );
+
+        assertEq(
+            wrap.feeBalance(token, validatorAIndex),
+            expectedValidatorAFeeBalance
+        );
+
+        vm.prank(admin);
+        wrap.removeValidator(validatorA);
+
+        vm.prank(user);
+        vm.expectEmit(true, true, true, true, token);
+        emit Transfer(
+            address(wrap),
+            validatorAFeeRecipient,
+            expectedValidatorAFeeBalance
+        );
+        wrap.claimValidatorFees(validatorA);
+
+        assertEq(wrap.feeBalance(token, validatorAIndex), 0);
+
+        assertEq(
+            IERC20(token).balanceOf(validatorAFeeRecipient),
+            initialValidatorABalance + expectedValidatorAFeeBalance
         );
     }
 

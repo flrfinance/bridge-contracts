@@ -402,6 +402,11 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     /// @inheritdoc IWrap
     function claimValidatorFees(address validator) public {
         address feeRecipient = validatorFeeRecipients[validator];
+
+        if (feeRecipient == address(0)) {
+            revert InvalidFeeRecipient();
+        }
+
         uint16 index = multisig.signers[validator].index;
         for (uint256 i = 0; i < tokens.length; i++) {
             address token = tokens[i];
