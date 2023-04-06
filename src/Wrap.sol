@@ -138,6 +138,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         uint256 recentBlockNumber
     ) {
         // Prevent malicious validators from pre-producing attestation signatures.
+        // This is helpful in case validators are temporarily compromised.
         // `blockhash(recentBlockNumber)` yields `0x0` when `recentBlockNumber < block.number - 256`.
         if (
             recentBlockHash == bytes32(0) ||
