@@ -68,7 +68,7 @@ contract WrapDepositRedeem is IWrapDepositRedeem, Wrap {
         address token,
         address mirrorToken,
         TokenInfo calldata tokenInfo
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external onlyRole(WEAK_ADMIN_ROLE) {
         _addToken(token, mirrorToken, tokenInfo);
     }
 }

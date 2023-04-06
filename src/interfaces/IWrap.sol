@@ -157,7 +157,7 @@ interface IWrap is IAccessControlEnumerable {
     /// @dev Update a token's configuration information.
     /// @param tokenInfo The token's new configuration info.
     /// @notice Set maxAmount to zero to disable the token.
-    /// @notice Can only be called by the owner.
+    /// @notice Can only be called by the weak-admin.
     function configureToken(
         address token,
         TokenInfo calldata tokenInfo
@@ -165,12 +165,12 @@ interface IWrap is IAccessControlEnumerable {
 
     /// @dev Set the multisig configuration.
     /// @param config Multisig config.
-    /// @notice Can only be called by the owner.
+    /// @notice Can only be called by the weak-admin.
     function configureMultisig(Multisig.Config calldata config) external;
 
     /// @dev Configure validator fees.
     /// @param validatorFeeBPS Validator fee in basis points.
-    /// @notice Can only be called by the owner.
+    /// @notice Can only be called by the weak-admin.
     function configureValidatorFees(uint16 validatorFeeBPS) external;
 
     /// @dev Deposit tokens to bridge to the other side.
@@ -210,12 +210,12 @@ interface IWrap is IAccessControlEnumerable {
 
     /// @dev Pauses the contract.
     /// @notice The contract can be paused by all addresses
-    /// with pause role but can only be unpaused by the admin.
+    /// with pause role but can only be unpaused by the weak-admin.
     function pause() external;
 
     /// @dev Unpauses the contract.
     /// @notice The contract can be paused by all addresses
-    /// with pause role but can only be unpaused by the admin.
+    /// with pause role but can only be unpaused by the weak-admin.
     function unpause() external;
 
     /// @dev Add a new validator to the contract.
@@ -223,7 +223,7 @@ interface IWrap is IAccessControlEnumerable {
     /// @param isFirstCommittee True when adding the validator to the first committee.
     /// @param feeRecipient Address of the fee recipient.
     /// false when adding the validator to the second committee.
-    /// @notice Can only be called by the owner.
+    /// @notice Can only be called by the admin.
     function addValidator(
         address validator,
         bool isFirstCommittee,
@@ -240,7 +240,7 @@ interface IWrap is IAccessControlEnumerable {
 
     /// @dev Remove existing validator from the contract.
     /// @param validator Address of the validator.
-    /// @notice Can only be called by the owner of the contract.
+    /// @notice Can only be called by the weak-admin.
     /// @notice The fees accumulated by the validator are distributed before being removed.
     function removeValidator(address validator) external;
 
@@ -252,7 +252,7 @@ interface IWrap is IAccessControlEnumerable {
 
     /// @dev Forcefully set next next execution index.
     /// @param index The new next execution index.
-    /// @notice Can only be called by the owner of the contract.
+    /// @notice Can only be called by the admin of the contract.
     function forceSetNextExecutionIndex(uint256 index) external;
 
     /// @dev Migratest the contract to a new address.

@@ -20,6 +20,10 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     /// @dev The role ID for addresses that can pause the contract.
     bytes32 public constant PAUSE_ROLE = keccak256("PAUSE");
 
+    /// @dev The role ID for addresses that has weak admin power.
+    /// Weak admin can perform administrative tasks that don't risk user's funds.
+    bytes32 public constant WEAK_ADMIN_ROLE = keccak256("WEAK_ADMIN");
+
     /// @dev Max protocol/validator fee that can be set by the owner.
     uint16 constant maxFeeBPS = 500; // should be less than 10,000
 
@@ -57,6 +61,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
 
     constructor(Multisig.Config memory config, uint16 _validatorFeeBPS) {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _setupRole(WEAK_ADMIN_ROLE, msg.sender);
         multisig.configure(config);
         configureValidatorFees(_validatorFeeBPS);
     }
@@ -320,7 +325,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     function configureToken(
         address token,
         TokenInfo calldata tokenInfo
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external onlyRole(WEAK_ADMIN_ROLE) {
         _configureTokenInfo(
             token,
             tokenInfo.minAmount,
@@ -333,7 +338,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     /// @inheritdoc IWrap
     function configureValidatorFees(
         uint16 _validatorFeeBPS
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) public onlyRole(WEAK_ADMIN_ROLE) {
         if (_validatorFeeBPS > maxFeeBPS) {
             revert FeeExceedsMaxFee();
         }
@@ -377,7 +382,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     }
 
     /// @inheritdoc IWrap
-    function unpause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function unpause() external onlyRole(WEAK_ADMIN_ROLE) {
         // The contract cannot be unpaused if its already migrated.
         if (migratedContract != address(0)) {
             revert Migrated();
@@ -398,7 +403,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     /// @inheritdoc IWrap
     function removeValidator(
         address validator
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external onlyRole(WEAK_ADMIN_ROLE) {
         multisig.removeSigner(validator);
     }
 
@@ -406,7 +411,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     function configureValidatorFeeRecipient(
         address validator,
         address feeRecipient
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external onlyRole(WEAK_ADMIN_ROLE) {
         validatorFeeRecipients[validator] = feeRecipient;
     }
 

@@ -18,7 +18,7 @@ interface IWrapMintBurn is IWrap {
 
     /// @dev Configure protocol fees.
     /// @param protocolFeeBPS Protocol fee in basis points.
-    /// @notice Can only be called by the owner.
+    /// @notice Can only be called by the weak-admin.
     /// @notice Should update minAmountWithFees for all tokens.
     function configureProtocolFees(uint16 protocolFeeBPS) external;
 
@@ -31,7 +31,7 @@ interface IWrapMintBurn is IWrap {
     /// @param tokenInfo Info associated with the token.
     /// @return Address of the new wrap token.
     /// @notice Set maxAmount to zero to disable the token.
-    /// @notice Can only be called by the owner.
+    /// @notice Can only be called by the weak-admin.
     function createAddToken(
         string memory tokenName,
         string memory tokenSymbol,
@@ -40,7 +40,7 @@ interface IWrapMintBurn is IWrap {
         TokenInfo calldata tokenInfo
     ) external returns (address);
 
-    /// @dev Allows the owner to claim the accumulated protocol fees.
-    /// @notice Can only be called by the owner.
+    /// @dev Allows the weak-admin to claim the accumulated protocol fees.
+    /// @notice Can only be called by the weak-admin.
     function claimProtocolFees(address token) external;
 }

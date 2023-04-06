@@ -96,7 +96,7 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
     /// @inheritdoc IWrapMintBurn
     function configureProtocolFees(
         uint16 _protocolFeeBPS
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) public onlyRole(WEAK_ADMIN_ROLE) {
         if (_protocolFeeBPS > maxFeeBPS) {
             revert FeeExceedsMaxFee();
         }
@@ -121,7 +121,7 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
         address mirrorToken,
         uint8 mirrorTokenDecimals,
         TokenInfo calldata tokenInfo
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) returns (address token) {
+    ) external onlyRole(WEAK_ADMIN_ROLE) returns (address token) {
         token = address(
             new WrapToken(tokenName, tokenSymbol, mirrorTokenDecimals)
         );
@@ -129,9 +129,7 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
     }
 
     /// @inheritdoc IWrapMintBurn
-    function claimProtocolFees(
-        address token
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function claimProtocolFees(address token) public onlyRole(WEAK_ADMIN_ROLE) {
         uint256 protocolFee = accumulatedProtocolFees[token];
         accumulatedProtocolFees[token] = 0;
         IERC20MintBurn(token).safeTransfer(msg.sender, protocolFee);
