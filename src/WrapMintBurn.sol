@@ -4,6 +4,9 @@ pragma solidity ^0.8.15;
 import {
     SafeERC20
 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {
+    IAccessControl
+} from "@openzeppelin/contracts/access/IAccessControl.sol";
 
 import { IWrap } from "./interfaces/IWrap.sol";
 import { IWrapMintBurn } from "./interfaces/IWrapMintBurn.sol";
@@ -22,6 +25,10 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
 
     /// @dev Protocol fee basis points charged on mint and burn.
     uint16 public protocolFeeBPS;
+
+    // @dev Minter and Pauser roles for the Wraps token.
+    bytes32 constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    bytes32 constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
     constructor(
         Multisig.Config memory config,
@@ -62,6 +69,28 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
         totalFee = protocolFee + validatorFee;
         IERC20MintBurn(token).mint(to, amount - totalFee);
         IERC20MintBurn(token).mint(address(this), totalFee);
+    }
+
+    function onMigrate(address _newContract) internal override {
+        // Transfer the ownership all the token contracts to the new address.
+        // Unlike WrapDepositRedeem this contract doesn't transfer the existing
+        // validatorFee and the protocolFee to the new contract. Therefore they
+        // still be claimed through this contract after migration.
+        for (uint256 i = 0; i < tokens.length; i++) {
+            address token = tokens[i];
+            // Grant the new contracts all the roles.
+            IAccessControl(token).grantRole(DEFAULT_ADMIN_ROLE, _newContract);
+            IAccessControl(token).grantRole(MINTER_ROLE, _newContract);
+            IAccessControl(token).grantRole(PAUSER_ROLE, _newContract);
+
+            // Remove the existing contract from all the roles.
+            IAccessControl(token).renounceRole(
+                DEFAULT_ADMIN_ROLE,
+                address(this)
+            );
+            IAccessControl(token).renounceRole(MINTER_ROLE, address(this));
+            IAccessControl(token).renounceRole(PAUSER_ROLE, address(this));
+        }
     }
 
     /// @inheritdoc IWrapMintBurn

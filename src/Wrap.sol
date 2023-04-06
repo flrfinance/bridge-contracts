@@ -52,6 +52,9 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     /// @dev Validator fee basis points.
     uint16 public validatorFeeBPS;
 
+    /// @dev Address of the migrated contract.
+    address public migratedContract;
+
     constructor(Multisig.Config memory config, uint16 _validatorFeeBPS) {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         multisig.configure(config);
@@ -85,6 +88,10 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         uint256 amount,
         address to
     ) internal virtual returns (uint256 totalFee, uint256 validatorFee);
+
+    /// @dev Hook executed before the bridge migration.
+    /// @param _newContract Address of the new contract.
+    function onMigrate(address _newContract) internal virtual;
 
     /// @dev Modifier to make a function callable only when the contract is not paused.
     modifier isNotPaused() {
@@ -371,6 +378,10 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
 
     /// @inheritdoc IWrap
     function unpause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        // The contract cannot be unpaused if its already migrated.
+        if (migratedContract != address(0)) {
+            revert Migrated();
+        }
         paused = false;
     }
 
@@ -421,5 +432,21 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         uint256 index
     ) public onlyRole(DEFAULT_ADMIN_ROLE) {
         multisig.forceSetNextExecutionIndex(index);
+    }
+
+    /// @inheritdoc IWrap
+    function migrate(address _newContract) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        // Check that the contract is already paused.
+        if (!paused) {
+            revert NotPaused();
+        }
+
+        // Check if the contract is already migrated.
+        if (migratedContract != address(0)) {
+            revert Migrated();
+        }
+
+        onMigrate(_newContract);
+        migratedContract = _newContract;
     }
 }

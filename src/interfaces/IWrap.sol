@@ -38,6 +38,12 @@ interface IWrap is IAccessControlEnumerable {
     /// @dev Thrown when the fee recipient address is the zero address.
     error InvalidFeeRecipient();
 
+    /// @dev Thrown when the contract is not paused.
+    error NotPaused();
+
+    /// @dev Thrown when the contract is already migrated.
+    error Migrated();
+
     /// @dev Emitted when a user deposits.
     /// @param id ID associated with the request.
     /// @param token Token deposited.
@@ -248,4 +254,10 @@ interface IWrap is IAccessControlEnumerable {
     /// @param index The new next execution index.
     /// @notice Can only be called by the owner of the contract.
     function forceSetNextExecutionIndex(uint256 index) external;
+
+    /// @dev Migratest the contract to a new address.
+    /// @param _newContract Address of the new contract.
+    /// @notice This function can only be called once in the lifetime of this
+    /// contract by the admin.
+    function migrate(address _newContract) external;
 }
