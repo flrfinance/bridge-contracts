@@ -66,9 +66,9 @@ library Multisig {
         Accepted // request has been approved
     }
 
-    /// @notice Unchanged should be the first element as the first value is used
-    /// as the default value in solidity. Also the sequence of other
-    /// elements shouldn't be changed.
+    /// @notice `Unchanged` should be the first element as the first value is used
+    /// as the default value in Solidity. The sequence of the other
+    /// elements also shouldn't be changed.
     enum RequestStatusTransition {
         Unchanged,
         NULLToUndecided,
