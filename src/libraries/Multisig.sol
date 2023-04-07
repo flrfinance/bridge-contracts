@@ -57,8 +57,8 @@ library Multisig {
     uint16 constant maxSignersSize = 256; // maxCommitteeSize * 2
 
     /// @dev Request statuses.
-    /// @notice NULL should be the first element as the first value is used
-    /// as the default value in solidity. The sequence of the other
+    /// @notice `NULL` should be the first element as the first value is used
+    /// as the default value in Solidity. The sequence of the other
     /// elements also shouldn't be changed.
     enum RequestStatus {
         NULL, // request which doesn't exist
