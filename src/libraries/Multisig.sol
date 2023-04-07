@@ -76,9 +76,9 @@ library Multisig {
     }
 
     /// @dev Signer statuses.
-    /// @notice Uninitialized should be the first element as the first value is used
-    /// as the default value in solidity. Also the sequence of other
-    /// elements shouldn't be changed.
+    /// @notice `Uninitialized` should be the first element as the first value is used
+    /// as the default value in Solidity. The sequence of the other
+    /// elements also shouldn't be changed.
     enum SignerStatus {
         Uninitialized,
         Removed,
