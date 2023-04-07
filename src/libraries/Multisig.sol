@@ -58,8 +58,8 @@ library Multisig {
 
     /// @dev Request statuses.
     /// @notice NULL should be the first element as the first value is used
-    /// as the default value in solidity. Also the sequence of other
-    /// elements shouldn't be changed.
+    /// as the default value in solidity. The sequence of the other
+    /// elements also shouldn't be changed.
     enum RequestStatus {
         NULL, // request which doesn't exist
         Undecided, // request hasn't reached quorum
