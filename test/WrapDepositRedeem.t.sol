@@ -28,7 +28,7 @@ contract WrapDepositRedeemTest is WrapTest {
 
         token = address(newToken);
         mirrorToken = _generateMirrorToken();
-        vm.prank(admin);
+        vm.prank(weakAdmin);
         wdr.addToken(token, mirrorToken, tokenInfo);
     }
 
@@ -47,6 +47,14 @@ contract WrapDepositRedeemTest is WrapTest {
         vm.prank(admin);
         wdr = new WrapDepositRedeemHarness(config, validatorFeeBPS);
         wrap = WrapHarness(wdr);
+
+        assertTrue(wrap.hasRole(wrap.DEFAULT_ADMIN_ROLE(), admin));
+        assertTrue(wrap.hasRole(wrap.WEAK_ADMIN_ROLE(), admin));
+
+        vm.prank(admin);
+        wrap.grantRole(WEAK_ADMIN_ROLE, weakAdmin);
+        vm.prank(admin);
+        wrap.renounceRole(WEAK_ADMIN_ROLE, admin);
     }
 
     function testConstructorValidatorFeeBPS() public {
@@ -134,12 +142,12 @@ contract WrapDepositRedeemTest is WrapTest {
         );
 
         mirrorToken = _generateMirrorToken();
-        vm.prank(admin);
+        vm.prank(weakAdmin);
         wdr.addToken(token, mirrorToken, tokenInfo);
         _assertCorrectAddTokenState();
     }
 
-    function testAddTokenRevertsIfCallerIsNotAdmin() public {
+    function testAddTokenRevertsIfCallerIsNotWeakAdmin() public {
         token = address(
             new TestERC20(
                 testTokenName,
@@ -150,7 +158,7 @@ contract WrapDepositRedeemTest is WrapTest {
 
         mirrorToken = _generateMirrorToken();
         vm.prank(user);
-        _expectMissingRoleRevert(user, DEFAULT_ADMIN_ROLE);
+        _expectMissingRoleRevert(user, WEAK_ADMIN_ROLE);
         wdr.addToken(token, mirrorToken, tokenInfo);
     }
 
