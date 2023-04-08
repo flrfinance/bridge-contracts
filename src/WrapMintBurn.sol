@@ -27,8 +27,8 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
     uint16 public protocolFeeBPS;
 
     // @dev Minter and Pauser roles for the Wraps token.
-    bytes32 constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
-    bytes32 constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 constant TOKEN_PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    bytes32 constant TOKEN_MINTER_ROLE = keccak256("MINTER_ROLE");
 
     constructor(
         Multisig.Config memory config,
@@ -80,16 +80,22 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
             address token = tokens[i];
             // Grant the new contracts all the roles.
             IAccessControl(token).grantRole(DEFAULT_ADMIN_ROLE, _newContract);
-            IAccessControl(token).grantRole(MINTER_ROLE, _newContract);
-            IAccessControl(token).grantRole(PAUSER_ROLE, _newContract);
+            IAccessControl(token).grantRole(TOKEN_MINTER_ROLE, _newContract);
+            IAccessControl(token).grantRole(TOKEN_PAUSER_ROLE, _newContract);
 
             // Renounce all roles from the existing contract.
             IAccessControl(token).renounceRole(
                 DEFAULT_ADMIN_ROLE,
                 address(this)
             );
-            IAccessControl(token).renounceRole(MINTER_ROLE, address(this));
-            IAccessControl(token).renounceRole(PAUSER_ROLE, address(this));
+            IAccessControl(token).renounceRole(
+                TOKEN_MINTER_ROLE,
+                address(this)
+            );
+            IAccessControl(token).renounceRole(
+                TOKEN_PAUSER_ROLE,
+                address(this)
+            );
         }
     }
 

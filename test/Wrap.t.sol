@@ -23,9 +23,6 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
     bytes32 WEAK_ADMIN_ROLE = keccak256("WEAK_ADMIN");
     bytes32 DEFAULT_ADMIN_ROLE = 0x0;
 
-    bytes32 constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
-    bytes32 constant MINTER_ROLE = keccak256("MINTER_ROLE");
-
     Multisig.Config config;
     WrapHarness wrap;
     uint16 validatorFeeBPS;

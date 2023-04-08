@@ -20,6 +20,9 @@ contract WrapMintBurnTest is WrapTest {
 
     uint8 mirrorTokenDecimals = 18;
 
+    bytes32 constant TOKEN_PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    bytes32 constant TOKEN_MINTER_ROLE = keccak256("MINTER_ROLE");
+
     function _addToken() internal override {
         mirrorToken = _generateMirrorToken();
         vm.prank(weakAdmin);
@@ -412,11 +415,11 @@ contract WrapMintBurnTest is WrapTest {
         wrap.exposed_onMigrate(newWrap);
 
         assertTrue(IAccessControl(token).hasRole(DEFAULT_ADMIN_ROLE, newWrap));
-        assertTrue(IAccessControl(token).hasRole(MINTER_ROLE, newWrap));
-        assertTrue(IAccessControl(token).hasRole(PAUSER_ROLE, newWrap));
+        assertTrue(IAccessControl(token).hasRole(TOKEN_MINTER_ROLE, newWrap));
+        assertTrue(IAccessControl(token).hasRole(TOKEN_PAUSER_ROLE, newWrap));
 
         assertFalse(IAccessControl(token).hasRole(DEFAULT_ADMIN_ROLE, oldWrap));
-        assertFalse(IAccessControl(token).hasRole(MINTER_ROLE, oldWrap));
-        assertFalse(IAccessControl(token).hasRole(PAUSER_ROLE, oldWrap));
+        assertFalse(IAccessControl(token).hasRole(TOKEN_MINTER_ROLE, oldWrap));
+        assertFalse(IAccessControl(token).hasRole(TOKEN_PAUSER_ROLE, oldWrap));
     }
 }
