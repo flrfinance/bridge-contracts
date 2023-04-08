@@ -1564,7 +1564,7 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         wrap.migrate(newWrap);
 
         vm.prank(weakAdmin);
-        vm.expectRevert(IWrap.Migrated.selector);
+        vm.expectRevert(IWrap.ContractMigrated.selector);
         wrap.unpause();
         assertTrue(wrap.paused());
     }
@@ -1709,7 +1709,7 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
     function testMigrateRevertsIfContractsNotPaused() public {
         address newWrap = address(_deployWrap());
         vm.prank(admin);
-        vm.expectRevert(IWrap.NotPaused.selector);
+        vm.expectRevert(IWrap.ContractNotPaused.selector);
         wrap.migrate(newWrap);
     }
 
@@ -1719,7 +1719,7 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         wrap.migrate(newWrap);
 
         vm.prank(admin);
-        vm.expectRevert(IWrap.Migrated.selector);
+        vm.expectRevert(IWrap.ContractMigrated.selector);
         wrap.migrate(newWrap);
     }
 

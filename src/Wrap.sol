@@ -385,7 +385,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     function unpause() external onlyRole(WEAK_ADMIN_ROLE) {
         // The contract cannot be unpaused if its already migrated.
         if (migratedContract != address(0)) {
-            revert Migrated();
+            revert ContractMigrated();
         }
         paused = false;
     }
@@ -443,12 +443,12 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     function migrate(address _newContract) public onlyRole(DEFAULT_ADMIN_ROLE) {
         // Check that the contract is already paused.
         if (!paused) {
-            revert NotPaused();
+            revert ContractNotPaused();
         }
 
         // Check if the contract is already migrated.
         if (migratedContract != address(0)) {
-            revert Migrated();
+            revert ContractMigrated();
         }
 
         onMigrate(_newContract);

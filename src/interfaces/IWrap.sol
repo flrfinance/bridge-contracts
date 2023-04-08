@@ -12,6 +12,12 @@ interface IWrap is IAccessControlEnumerable {
     /// @dev Thrown when an operation is performed on a paused Wrap contract.
     error ContractPaused();
 
+    /// @dev Thrown when the contract is not paused.
+    error ContractNotPaused();
+
+    /// @dev Thrown when the contract is already migrated.
+    error ContractMigrated();
+
     /// @dev Thrown when the token is not allowlisted or the amount
     /// being deposited/approved is not in the range of min/maxAmount.
     error InvalidTokenAmount();
@@ -37,12 +43,6 @@ interface IWrap is IAccessControlEnumerable {
 
     /// @dev Thrown when the fee recipient address is the zero address.
     error InvalidFeeRecipient();
-
-    /// @dev Thrown when the contract is not paused.
-    error NotPaused();
-
-    /// @dev Thrown when the contract is already migrated.
-    error Migrated();
 
     /// @dev Emitted when a user deposits.
     /// @param id ID associated with the request.
