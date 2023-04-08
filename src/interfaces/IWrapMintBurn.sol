@@ -22,9 +22,15 @@ interface IWrapMintBurn is IWrap {
     /// @notice Should update minAmountWithFees for all tokens.
     function configureProtocolFees(uint16 protocolFeeBPS) external;
 
-    /// @dev Deploy a new token contract and link it to its mirror token.
+    /// @dev Link a token to its mirror token. A new token will
+    /// be deployed if existingToken is the zero address. Otherwise
+    /// the existingToken will be used instead, which means that
+    /// a contract migration is underway.
     /// @param tokenName Name of the token to be created.
     /// @param tokenSymbol Symbol of the token to be created.
+    /// @param existingToken Address of an existing wrapped token that
+    /// will be used instead of deploying a new token. A new token will
+    /// be deployed if this is set as the zero address.
     /// @param mirrorToken Address of the token that will be deposited in
     /// the mirror contract.
     /// @param mirrorTokenDecimals Decimals of the mirror token.
@@ -35,6 +41,7 @@ interface IWrapMintBurn is IWrap {
     function createAddToken(
         string memory tokenName,
         string memory tokenSymbol,
+        address existingToken,
         address mirrorToken,
         uint8 mirrorTokenDecimals,
         TokenInfo calldata tokenInfo

@@ -13,8 +13,8 @@ import { Wrap } from "../../src/Wrap.sol";
 import { IWrap } from "../../src/interfaces/IWrap.sol";
 
 library WrapDeployer {
-    struct ValiatorConfig {
-        address validator;
+    struct ValidatorConfig {
+        address validatorAddress;
         bool isFirstCommittee;
         address feeRecipient;
     }
@@ -22,8 +22,8 @@ library WrapDeployer {
     struct TokenConfig {
         string name;
         string symbol;
-        address mirror;
         address token;
+        address mirrorToken;
         uint8 mirrorDecimals;
         uint256 maxAmount;
         uint256 minAmount;
@@ -41,13 +41,13 @@ library WrapDeployer {
         uint8 secondCommitteeQuorum;
         uint8 protocolFeeBPS;
         uint8 validatorFeeBPS;
-        ValiatorConfig[] validators;
+        ValidatorConfig[] validators;
         TokenConfig[] tokens;
         address adminMultisig;
-        uint256 timeLockDelay;
+        uint256 timelockDelay;
     }
 
-    function deploy(WrapConfig calldata wc) public {
+    function deploy(WrapConfig calldata wc) public returns (Wrap) {
         // Deploy the appropriate wraps contract.
         Multisig.Config memory c = Multisig.Config(
             wc.firstCommitteeQuorum,
@@ -57,23 +57,27 @@ library WrapDeployer {
         Wrap w = wc.wrapType == WrapType.MintBurn
             ? Wrap(new WrapMintBurn(c, wc.protocolFeeBPS, wc.validatorFeeBPS))
             : Wrap(new WrapDepositRedeem(c, wc.validatorFeeBPS));
-        console2.log("Wrap contract deployed at %d", address(w));
+        console2.log("Wrap contract deployed at %s", address(w));
 
         // Add the initial set of valiators.
-        ValiatorConfig[] memory validators = wc.validators;
+        ValidatorConfig[] memory validators = wc.validators;
         require(
             validators.length <= 256,
             "Initial set of validators should be less than 256"
         );
         for (uint16 i = 0; i < validators.length; i++) {
-            ValiatorConfig memory v = validators[i];
+            ValidatorConfig memory v = validators[i];
             console2.log(
-                "Adding validator: { validator: %d, isFirstCommittee: %d, feeRecipient: %d }",
-                v.validator,
+                "Adding validator: { address: %s, isFirstCommittee: %s, feeRecipient: %s }",
+                v.validatorAddress,
                 v.isFirstCommittee,
                 v.feeRecipient
             );
-            w.addValidator(v.validator, v.isFirstCommittee, v.feeRecipient);
+            w.addValidator(
+                v.validatorAddress,
+                v.isFirstCommittee,
+                v.feeRecipient
+            );
         }
 
         // Add the initial set of tokens.
@@ -88,48 +92,56 @@ library WrapDeployer {
 
             if (wc.wrapType == WrapType.MintBurn) {
                 console2.log(
-                    "Adding token: { name: %d, mirrorToken: %d }",
+                    "Adding token: { name: '%s', token: %s, mirrorToken: %s }",
                     t.name,
-                    t.mirror
+                    t.token,
+                    t.mirrorToken
                 );
                 address wrapToken = WrapMintBurn(address(w)).createAddToken(
                     t.name,
                     t.symbol,
-                    t.mirror,
+                    t.token,
+                    t.mirrorToken,
                     t.mirrorDecimals,
                     ti
                 );
-                console2.log("Wrap token deployed: { address: %d }", wrapToken);
+                console2.log("Wrap token deployed: { address: %s }", wrapToken);
             } else {
                 console2.log(
-                    "Adding token: { token: %d, mirrorToken: %d }",
+                    "Adding token: { token: %s, mirrorToken: %s }",
                     t.token,
-                    t.mirror
+                    t.mirrorToken
                 );
-                WrapDepositRedeem(address(w)).addToken(t.token, t.mirror, ti);
+                WrapDepositRedeem(address(w)).addToken(
+                    t.token,
+                    t.mirrorToken,
+                    ti
+                );
             }
         }
 
         // Deploy the TimelockController contract.
         console2.log("Deploying TimelockController");
         TimelockController tlc = new TimelockController(
-            wc.timeLockDelay,
+            wc.timelockDelay,
             new address[](0),
             new address[](0)
         );
-        bytes32 DEFAULT_ADMIN_ROLE = tlc.DEFAULT_ADMIN_ROLE();
-        tlc.grantRole(DEFAULT_ADMIN_ROLE, wc.adminMultisig);
-        tlc.renounceRole(DEFAULT_ADMIN_ROLE, address(this));
+        bytes32 TIMELOCK_ADMIN_ROLE = tlc.TIMELOCK_ADMIN_ROLE();
+        tlc.grantRole(TIMELOCK_ADMIN_ROLE, wc.adminMultisig);
+        tlc.renounceRole(TIMELOCK_ADMIN_ROLE, address(this));
 
-        // Give the admin multisig weak admin role.
+        // Give the admin multisig weak-admin role.
         bytes32 WEAK_ADMIN_ROLE = w.WEAK_ADMIN_ROLE();
         w.grantRole(WEAK_ADMIN_ROLE, wc.adminMultisig);
         w.renounceRole(WEAK_ADMIN_ROLE, address(this));
 
         // Give the TimelockController contract DEFAULT_ADMIN_ROLE.
-        DEFAULT_ADMIN_ROLE = w.DEFAULT_ADMIN_ROLE();
+        bytes32 DEFAULT_ADMIN_ROLE = w.DEFAULT_ADMIN_ROLE();
         w.grantRole(DEFAULT_ADMIN_ROLE, address(tlc));
         w.renounceRole(DEFAULT_ADMIN_ROLE, address(this));
+
+        return w;
     }
     //TODO: add functions to verify and update deployment.
 }

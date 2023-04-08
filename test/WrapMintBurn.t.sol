@@ -29,6 +29,7 @@ contract WrapMintBurnTest is WrapTest {
         token = wmb.createAddToken(
             testTokenName,
             testTokenSymbol,
+            address(0),
             mirrorToken,
             mirrorTokenDecimals,
             tokenInfo
@@ -188,6 +189,7 @@ contract WrapMintBurnTest is WrapTest {
         token = wmb.createAddToken(
             testTokenName,
             testTokenSymbol,
+            address(0),
             mirrorToken,
             mirrorTokenDecimals,
             tokenInfo
@@ -202,6 +204,7 @@ contract WrapMintBurnTest is WrapTest {
         wmb.createAddToken(
             testTokenName,
             testTokenSymbol,
+            address(0),
             mirrorToken,
             mirrorTokenDecimals,
             tokenInfo

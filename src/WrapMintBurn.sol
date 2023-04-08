@@ -124,13 +124,16 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
     function createAddToken(
         string memory tokenName,
         string memory tokenSymbol,
+        address existingToken,
         address mirrorToken,
         uint8 mirrorTokenDecimals,
         TokenInfo calldata tokenInfo
     ) external onlyRole(WEAK_ADMIN_ROLE) returns (address token) {
-        token = address(
-            new WrapToken(tokenName, tokenSymbol, mirrorTokenDecimals)
-        );
+        token = existingToken == address(0)
+            ? address(
+                new WrapToken(tokenName, tokenSymbol, mirrorTokenDecimals)
+            )
+            : existingToken;
         _addToken(token, mirrorToken, tokenInfo);
     }
 
