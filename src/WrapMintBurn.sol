@@ -72,10 +72,10 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
     }
 
     function onMigrate(address _newContract) internal override {
-        // Transfer the ownership all the token contracts to the new address.
-        // Unlike WrapDepositRedeem this contract doesn't transfer the existing
-        // validatorFee and the protocolFee to the new contract. Therefore they
-        // still be claimed through this contract after migration.
+        // Transfer ownership of all the token contracts to the new address.
+        // Unlike WrapDepositRedeem, this contract doesn't transfer the existing
+        // validatorFee and protocolFee to the new contract. Therefore they can
+        // still be claimed through this contract after the migration.
         for (uint256 i = 0; i < tokens.length; i++) {
             address token = tokens[i];
             // Grant the new contracts all the roles.
@@ -83,7 +83,7 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
             IAccessControl(token).grantRole(MINTER_ROLE, _newContract);
             IAccessControl(token).grantRole(PAUSER_ROLE, _newContract);
 
-            // Remove the existing contract from all the roles.
+            // Renounce all roles from the existing contract.
             IAccessControl(token).renounceRole(
                 DEFAULT_ADMIN_ROLE,
                 address(this)

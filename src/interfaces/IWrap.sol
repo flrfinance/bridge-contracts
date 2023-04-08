@@ -165,7 +165,7 @@ interface IWrap is IAccessControlEnumerable {
 
     /// @dev Set the multisig configuration.
     /// @param config Multisig config.
-    /// @notice Can only be called by the weak-admin.
+    /// @notice Can only be called by the admin.
     function configureMultisig(Multisig.Config calldata config) external;
 
     /// @dev Configure validator fees.

@@ -54,8 +54,8 @@ contract WrapDepositRedeem is IWrapDepositRedeem, Wrap {
     function onMigrate(address _newContract) internal override {
         // Transfer all the token reserves to the new contract.
         // Notice that this will also transfer all the validator fees.
-        // Therefore either the new bridge should respect the existing validator fees or
-        // All the validator fees must be claimed before migration.
+        // Therefore, either the new bridge should respect the existing validator fees or
+        // all the validator fees must be claimed before the migration.
         for (uint256 i = 0; i < tokens.length; i++) {
             address token = tokens[i];
             uint256 tokenBalance = IERC20(token).balanceOf(address(this));
