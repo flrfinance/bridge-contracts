@@ -255,7 +255,7 @@ interface IWrap is IAccessControlEnumerable {
     /// @notice Can only be called by the admin of the contract.
     function forceSetNextExecutionIndex(uint256 index) external;
 
-    /// @dev Migratest the contract to a new address.
+    /// @dev Migrates the contract to a new address.
     /// @param _newContract Address of the new contract.
     /// @notice This function can only be called once in the lifetime of this
     /// contract by the admin.
