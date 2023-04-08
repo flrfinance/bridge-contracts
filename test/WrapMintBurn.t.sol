@@ -2,6 +2,9 @@
 pragma solidity ^0.8.13;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {
+    IAccessControl
+} from "@openzeppelin/contracts/access/IAccessControl.sol";
 
 import { WrapTest } from "./Wrap.t.sol";
 import { IWrap } from "../src/interfaces/IWrap.sol";
@@ -389,5 +392,31 @@ contract WrapMintBurnTest is WrapTest {
             IERC20(token).balanceOf(_custodian()),
             initialCustodianBalance + fee
         );
+    }
+
+    function _deployWrap() internal override returns (WrapHarness) {
+        vm.prank(admin);
+        WrapMintBurnHarness newWMB = new WrapMintBurnHarness(
+            config,
+            protocolFeeBPS,
+            validatorFeeBPS
+        );
+        return WrapHarness(newWMB);
+    }
+
+    // TODO: test with multiple tokens
+    function _testOnMigrate() internal override withToken {
+        address oldWrap = address(wrap);
+        address newWrap = address(_deployWrap());
+
+        wrap.exposed_onMigrate(newWrap);
+
+        assertTrue(IAccessControl(token).hasRole(DEFAULT_ADMIN_ROLE, newWrap));
+        assertTrue(IAccessControl(token).hasRole(MINTER_ROLE, newWrap));
+        assertTrue(IAccessControl(token).hasRole(PAUSER_ROLE, newWrap));
+
+        assertFalse(IAccessControl(token).hasRole(DEFAULT_ADMIN_ROLE, oldWrap));
+        assertFalse(IAccessControl(token).hasRole(MINTER_ROLE, oldWrap));
+        assertFalse(IAccessControl(token).hasRole(PAUSER_ROLE, oldWrap));
     }
 }

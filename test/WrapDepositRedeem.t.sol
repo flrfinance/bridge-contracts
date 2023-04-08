@@ -212,4 +212,32 @@ contract WrapDepositRedeemTest is WrapTest {
             initialCustodianBalance - amount + fee
         );
     }
+
+    function _deployWrap() internal override returns (WrapHarness) {
+        vm.prank(admin);
+        WrapDepositRedeemHarness newWDR = new WrapDepositRedeemHarness(
+            config,
+            validatorFeeBPS
+        );
+        return WrapHarness(newWDR);
+    }
+
+    // TODO: test with multiple tokens
+    function _testOnMigrate()
+        internal
+        override
+        withToken
+        withMintedTokens(address(wrap), 1337)
+    // TODO: test random amounts
+    {
+        address oldWrap = address(wrap);
+        address newWrap = address(_deployWrap());
+
+        uint256 initialOldWrapBalance = IERC20(token).balanceOf(oldWrap);
+
+        wrap.exposed_onMigrate(newWrap);
+
+        assertEq(IERC20(token).balanceOf(oldWrap), 0);
+        assertEq(IERC20(token).balanceOf(newWrap), initialOldWrapBalance);
+    }
 }

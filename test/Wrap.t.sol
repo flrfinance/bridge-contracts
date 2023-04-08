@@ -23,6 +23,9 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
     bytes32 WEAK_ADMIN_ROLE = keccak256("WEAK_ADMIN");
     bytes32 DEFAULT_ADMIN_ROLE = 0x0;
 
+    bytes32 constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    bytes32 constant MINTER_ROLE = keccak256("MINTER_ROLE");
+
     Multisig.Config config;
     WrapHarness wrap;
     uint16 validatorFeeBPS;
@@ -1555,6 +1558,17 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         wrap.unpause();
     }
 
+    function testUnpauseRevertsIfContractsAlreadyMigrated() public withPaused {
+        address newWrap = address(_deployWrap());
+        vm.prank(admin);
+        wrap.migrate(newWrap);
+
+        vm.prank(weakAdmin);
+        vm.expectRevert(IWrap.Migrated.selector);
+        wrap.unpause();
+        assertTrue(wrap.paused());
+    }
+
     function _testAddValidator(Committee committee) internal {
         uint8 initialFirstCommitteeSize = wrap
             .exposed_multisigFirstCommitteeSize();
@@ -1669,5 +1683,52 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         uint256 newNextExecutionIndex = wrap.nextExecutionIndex() + 1;
         vm.prank(admin);
         wrap.forceSetNextExecutionIndex(newNextExecutionIndex);
+    }
+
+    function _testOnMigrate() internal virtual;
+
+    function testOnMigrate() public {
+        _testOnMigrate();
+    }
+
+    // TODO: use this in Wrap{MintBurn,DepositRedeem} constructors
+    function _deployWrap() internal virtual returns (WrapHarness);
+
+    function testMigrateRevertsIfCallerIsNotAdmin() public withPaused {
+        address newWrap = address(_deployWrap());
+
+        vm.prank(user);
+        _expectMissingRoleRevert(user, DEFAULT_ADMIN_ROLE);
+        wrap.migrate(newWrap);
+
+        vm.prank(weakAdmin);
+        _expectMissingRoleRevert(weakAdmin, DEFAULT_ADMIN_ROLE);
+        wrap.migrate(newWrap);
+    }
+
+    function testMigrateRevertsIfContractsNotPaused() public {
+        address newWrap = address(_deployWrap());
+        vm.prank(admin);
+        vm.expectRevert(IWrap.NotPaused.selector);
+        wrap.migrate(newWrap);
+    }
+
+    function testMigrateRevertsIfContractsAlreadyMigrated() public withPaused {
+        address newWrap = address(_deployWrap());
+        vm.prank(admin);
+        wrap.migrate(newWrap);
+
+        vm.prank(admin);
+        vm.expectRevert(IWrap.Migrated.selector);
+        wrap.migrate(newWrap);
+    }
+
+    function testMigrate() public withToken withPaused {
+        address newWrap = address(_deployWrap());
+
+        vm.prank(admin);
+        wrap.migrate(newWrap);
+
+        assertEq(wrap.migratedContract(), newWrap);
     }
 }
