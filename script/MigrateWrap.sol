@@ -40,8 +40,10 @@ contract MigrateWrap is Script {
 
         vm.selectFork(sourceForkId);
         oldWrapDepositRedeem.migrate(address(newWrapDepositRedeem));
+        console.log("Migrated WrapDepositRedeem");
 
         vm.selectFork(targetForkId);
         oldWrapMintBurn.migrate(address(newWrapMintBurn));
+        console.log("Migrated WrapMintBurn");
     }
 }
