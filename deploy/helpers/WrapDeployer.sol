@@ -54,12 +54,19 @@ contract WrapDeployer is Script {
             wc.firstCommitteeQuorum,
             wc.secondCommitteeQuorum
         );
-        console2.log("Deploying Wrap contract");
+        console2.log(
+            "==================== DEPLOYING Wrap%s CONTRACT ====================",
+            wc.wrapType == WrapType.MintBurn ? "MintBurn" : "DepositRedeem"
+        );
 
         Wrap w = wc.wrapType == WrapType.MintBurn
             ? Wrap(new WrapMintBurn(c, wc.protocolFeeBPS, wc.validatorFeeBPS))
             : Wrap(new WrapDepositRedeem(c, wc.validatorFeeBPS));
-        console2.log("Wrap contract deployed at %s", address(w));
+        console2.log(
+            "Wrap%s contract deployed at %s",
+            wc.wrapType == WrapType.MintBurn ? "MintBurn" : "DepositRedeem",
+            address(w)
+        );
 
         // Add the initial set of valiators.
         ValidatorConfig[] memory validators = wc.validators;
@@ -107,7 +114,14 @@ contract WrapDeployer is Script {
                     t.mirrorDecimals,
                     ti
                 );
-                console2.log("Wrap token deployed: { address: %s }", wrapToken);
+
+                console2.log(
+                    "%s at %s",
+                    t.token == address(0)
+                        ? "Wrap token deployed"
+                        : "Used an existing wrap token that lives",
+                    wrapToken
+                );
             } else {
                 console2.log(
                     "Adding token: { token: %s, mirrorToken: %s }",
@@ -138,15 +152,30 @@ contract WrapDeployer is Script {
         tlc.grantRole(TIMELOCK_ADMIN_ROLE, wc.adminMultisig);
         tlc.renounceRole(TIMELOCK_ADMIN_ROLE, msg.sender);
 
+        console2.log(
+            "TimelockController TIMELOCK_ADMIN_ROLE transferred to admin multisig at %s",
+            address(wc.adminMultisig)
+        );
+
         // Give the admin multisig weak-admin role.
         bytes32 WEAK_ADMIN_ROLE = w.WEAK_ADMIN_ROLE();
         w.grantRole(WEAK_ADMIN_ROLE, wc.adminMultisig);
         w.renounceRole(WEAK_ADMIN_ROLE, msg.sender);
 
+        console2.log(
+            "Wrap WEAK_ADMIN_ROLE transferred to admin multisig at %s",
+            address(wc.adminMultisig)
+        );
+
         // Give the TimelockController contract DEFAULT_ADMIN_ROLE.
         bytes32 DEFAULT_ADMIN_ROLE = w.DEFAULT_ADMIN_ROLE();
         w.grantRole(DEFAULT_ADMIN_ROLE, address(tlc));
         w.renounceRole(DEFAULT_ADMIN_ROLE, msg.sender);
+
+        console2.log(
+            "Wrap DEFAULT_ADMIN_ROLE transferred to TimelockController at %s",
+            address(tlc)
+        );
 
         return w;
     }
