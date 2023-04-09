@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+import "forge-std/Script.sol";
 import "forge-std/console2.sol";
 import {
     TimelockController
@@ -12,7 +13,7 @@ import { WrapMintBurn } from "../../src/WrapMintBurn.sol";
 import { Wrap } from "../../src/Wrap.sol";
 import { IWrap } from "../../src/interfaces/IWrap.sol";
 
-library WrapDeployer {
+contract WrapDeployer is Script {
     struct ValidatorConfig {
         address validatorAddress;
         bool isFirstCommittee;
@@ -47,13 +48,14 @@ library WrapDeployer {
         uint256 timelockDelay;
     }
 
-    function deploy(WrapConfig calldata wc) public returns (Wrap) {
+    function deploy(WrapConfig memory wc) public returns (Wrap) {
         // Deploy the appropriate wraps contract.
         Multisig.Config memory c = Multisig.Config(
             wc.firstCommitteeQuorum,
             wc.secondCommitteeQuorum
         );
         console2.log("Deploying Wrap contract");
+
         Wrap w = wc.wrapType == WrapType.MintBurn
             ? Wrap(new WrapMintBurn(c, wc.protocolFeeBPS, wc.validatorFeeBPS))
             : Wrap(new WrapDepositRedeem(c, wc.validatorFeeBPS));
@@ -127,19 +129,24 @@ library WrapDeployer {
             new address[](0),
             new address[](0)
         );
+        console2.log(
+            "TimelockController contract deployed at %s",
+            address(tlc)
+        );
+
         bytes32 TIMELOCK_ADMIN_ROLE = tlc.TIMELOCK_ADMIN_ROLE();
         tlc.grantRole(TIMELOCK_ADMIN_ROLE, wc.adminMultisig);
-        tlc.renounceRole(TIMELOCK_ADMIN_ROLE, address(this));
+        tlc.renounceRole(TIMELOCK_ADMIN_ROLE, msg.sender);
 
         // Give the admin multisig weak-admin role.
         bytes32 WEAK_ADMIN_ROLE = w.WEAK_ADMIN_ROLE();
         w.grantRole(WEAK_ADMIN_ROLE, wc.adminMultisig);
-        w.renounceRole(WEAK_ADMIN_ROLE, address(this));
+        w.renounceRole(WEAK_ADMIN_ROLE, msg.sender);
 
         // Give the TimelockController contract DEFAULT_ADMIN_ROLE.
         bytes32 DEFAULT_ADMIN_ROLE = w.DEFAULT_ADMIN_ROLE();
         w.grantRole(DEFAULT_ADMIN_ROLE, address(tlc));
-        w.renounceRole(DEFAULT_ADMIN_ROLE, address(this));
+        w.renounceRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
         return w;
     }

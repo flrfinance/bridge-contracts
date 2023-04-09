@@ -7,19 +7,19 @@ import { WrapDepositRedeem } from "../src/WrapDepositRedeem.sol";
 import { WrapMintBurn } from "../src/WrapMintBurn.sol";
 import { WrapDeployer } from "./helpers/WrapDeployer.sol";
 
-contract DeployWrap is Script {
+contract DeployWrap is WrapDeployer {
     function run() external {
         WrapDeployer.ValidatorConfig[]
             memory validators = new WrapDeployer.ValidatorConfig[](2);
         validators[0] = WrapDeployer.ValidatorConfig({
-            validatorAddress: address(1),
+            validatorAddress: 0xebAa49C421A6158f280A04a0DEd08189110Cdf1F,
             isFirstCommittee: true,
-            feeRecipient: address(1)
+            feeRecipient: 0xebAa49C421A6158f280A04a0DEd08189110Cdf1F
         });
         validators[1] = WrapDeployer.ValidatorConfig({
-            validatorAddress: address(2),
+            validatorAddress: 0x675767258F825B707063a96590A31005f1944Ca8,
             isFirstCommittee: false,
-            feeRecipient: address(2)
+            feeRecipient: 0x675767258F825B707063a96590A31005f1944Ca8
         });
 
         WrapDeployer.TokenConfig[]
@@ -27,8 +27,8 @@ contract DeployWrap is Script {
         tokensWMB[0] = WrapDeployer.TokenConfig({
             name: "Wrapped XDC",
             symbol: "WXDC",
-            token: 0xE99500AB4A413164DA49Af83B9824749059b46ce,
-            mirrorToken: 0x767F3AB8900d8011856F18Da0Bf7cD46E85a429F,
+            token: address(0), // Sould be non-zero when upgrading
+            mirrorToken: 0xE99500AB4A413164DA49Af83B9824749059b46ce,
             mirrorDecimals: 18,
             maxAmount: 1e24,
             minAmount: 1e18,
@@ -38,13 +38,13 @@ contract DeployWrap is Script {
         WrapDeployer.WrapConfig memory wmbConfig = WrapDeployer.WrapConfig({
             wrapType: WrapDeployer.WrapType.MintBurn,
             firstCommitteeQuorum: 1,
-            secondCommitteeQuorum: 2,
+            secondCommitteeQuorum: 1,
             protocolFeeBPS: 50,
             validatorFeeBPS: 50,
             validators: validators,
             tokens: tokensWMB,
-            adminMultisig: address(1337),
-            timelockDelay: 7 days
+            adminMultisig: 0x61D99Fd6AF946B8e35892e2A025fd01527e3DB92,
+            timelockDelay: 5 minutes
         });
 
         WrapDeployer.TokenConfig[]
@@ -53,7 +53,7 @@ contract DeployWrap is Script {
             name: "",
             symbol: "",
             token: 0xE99500AB4A413164DA49Af83B9824749059b46ce,
-            mirrorToken: address(0),
+            mirrorToken: address(0), // Will be replaced once WMB is deployed
             mirrorDecimals: 18,
             maxAmount: 1e24,
             minAmount: 1e18,
@@ -63,28 +63,37 @@ contract DeployWrap is Script {
         WrapDeployer.WrapConfig memory wdrConfig = WrapDeployer.WrapConfig({
             wrapType: WrapDeployer.WrapType.DepositRedeem,
             firstCommitteeQuorum: 1,
-            secondCommitteeQuorum: 2,
+            secondCommitteeQuorum: 1,
             protocolFeeBPS: 0,
             validatorFeeBPS: 50,
             validators: validators,
             tokens: tokensWDR,
-            adminMultisig: address(1337),
-            timelockDelay: 7 days
+            adminMultisig: 0x61D99Fd6AF946B8e35892e2A025fd01527e3DB92,
+            timelockDelay: 5 minutes
         });
 
-        vm.createSelectFork(vm.rpcUrl("source"));
-
-        vm.startBroadcast();
-        Wrap wmb = WrapDeployer.deploy(wmbConfig);
-        vm.stopBroadcast();
-
-        //vm.makePersistent(address(wmb));
-        tokensWDR[0].mirrorToken = address(wmb);
+        require(
+            tokensWMB.length == tokensWDR.length,
+            "The tokens arrays should be the same length for both chains"
+        );
+        for (uint256 i = 0; i < tokensWMB.length; i++) {
+            tokensWMB[i].mirrorToken = tokensWDR[i].token;
+        }
 
         vm.createSelectFork(vm.rpcUrl("target"));
 
         vm.startBroadcast();
-        WrapDeployer.deploy(wdrConfig);
+        Wrap wmb = deploy(wmbConfig);
+        vm.stopBroadcast();
+
+        for (uint256 i = 0; i < tokensWMB.length; i++) {
+            tokensWDR[i].mirrorToken = wmb.tokens(i);
+        }
+
+        vm.createSelectFork(vm.rpcUrl("source"));
+
+        vm.startBroadcast();
+        deploy(wdrConfig);
         vm.stopBroadcast();
     }
 }
