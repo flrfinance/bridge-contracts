@@ -44,7 +44,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
 
     /// @dev Array of all the tokens added.
     /// @notice A token in the list might not be active.
-    address[] tokens;
+    address[] public tokens;
 
     /// @dev Dual multisig to manage validators,
     /// attestations and request quorum.
