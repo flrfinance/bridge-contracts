@@ -138,9 +138,12 @@ contract WrapMintBurn is IWrapMintBurn, Wrap {
     }
 
     /// @inheritdoc IWrapMintBurn
-    function claimProtocolFees(address token) public onlyRole(WEAK_ADMIN_ROLE) {
+    function claimProtocolFees(
+        address token,
+        address recipient
+    ) public onlyRole(WEAK_ADMIN_ROLE) {
         uint256 protocolFee = accumulatedProtocolFees[token];
         accumulatedProtocolFees[token] = 0;
-        IERC20MintBurn(token).safeTransfer(msg.sender, protocolFee);
+        IERC20MintBurn(token).safeTransfer(recipient, protocolFee);
     }
 }

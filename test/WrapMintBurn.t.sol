@@ -231,7 +231,7 @@ contract WrapMintBurnTest is WrapTest {
         vm.prank(weakAdmin);
         vm.expectEmit(true, true, true, true, token);
         emit Transfer(address(wrap), weakAdmin, expectedProtocolFee);
-        wmb.claimProtocolFees(token);
+        wmb.claimProtocolFees(token, weakAdmin);
 
         assertEq(wmb.accumulatedProtocolFees(token), 0);
         assertEq(
@@ -254,7 +254,7 @@ contract WrapMintBurnTest is WrapTest {
         _executeDeposit(1000, user);
         vm.prank(user);
         _expectMissingRoleRevert(user, WEAK_ADMIN_ROLE);
-        wmb.claimProtocolFees(token);
+        wmb.claimProtocolFees(token, user);
     }
 
     function _expectDepositEvents(
