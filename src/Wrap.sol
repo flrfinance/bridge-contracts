@@ -99,10 +99,26 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     /// @param _newContract Address of the new contract.
     function onMigrate(address _newContract) internal virtual;
 
-    /// @dev Modifier to make a function callable only when the contract is not paused.
+    /// @dev Modifier to check if the contract is not paused.
     modifier isNotPaused() {
         if (paused == true) {
             revert ContractPaused();
+        }
+        _;
+    }
+
+    /// @dev Modifier to check if the contract is paused.
+    modifier isPaused() {
+        if (paused == false) {
+            revert ContractNotPaused();
+        }
+        _;
+    }
+
+    /// @dev Modifier to check that contract is not already migrated.
+    modifier notMigrated() {
+        if (migratedContract != address(0)) {
+            revert ContractMigrated();
         }
         _;
     }
@@ -383,11 +399,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     }
 
     /// @inheritdoc IWrap
-    function unpause() external onlyRole(WEAK_ADMIN_ROLE) {
-        // The contract cannot be unpaused if its already migrated.
-        if (migratedContract != address(0)) {
-            revert ContractMigrated();
-        }
+    function unpause() external notMigrated onlyRole(WEAK_ADMIN_ROLE) {
         paused = false;
     }
 
@@ -441,17 +453,9 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     }
 
     /// @inheritdoc IWrap
-    function migrate(address _newContract) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        // Check that the contract is already paused.
-        if (!paused) {
-            revert ContractNotPaused();
-        }
-
-        // Check if the contract is already migrated.
-        if (migratedContract != address(0)) {
-            revert ContractMigrated();
-        }
-
+    function migrate(
+        address _newContract
+    ) public isPaused notMigrated onlyRole(DEFAULT_ADMIN_ROLE) {
         onMigrate(_newContract);
         migratedContract = _newContract;
     }
