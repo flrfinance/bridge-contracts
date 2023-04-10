@@ -62,6 +62,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     constructor(Multisig.Config memory config, uint16 _validatorFeeBPS) {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(WEAK_ADMIN_ROLE, msg.sender);
+        _setRoleAdmin(PAUSE_ROLE, WEAK_ADMIN_ROLE);
         multisig.configure(config);
         configureValidatorFees(_validatorFeeBPS);
     }
