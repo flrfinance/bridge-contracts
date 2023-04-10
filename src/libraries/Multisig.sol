@@ -57,12 +57,18 @@ library Multisig {
     uint16 constant maxSignersSize = 256; // maxCommitteeSize * 2
 
     /// @dev Request statuses.
+    /// @notice `NULL` should be the first element as the first value is used
+    /// as the default value in Solidity. The sequence of the other
+    /// elements also shouldn't be changed.
     enum RequestStatus {
         NULL, // request which doesn't exist
         Undecided, // request hasn't reached quorum
         Accepted // request has been approved
     }
 
+    /// @notice `Unchanged` should be the first element as the first value is used
+    /// as the default value in Solidity. The sequence of the other
+    /// elements also shouldn't be changed.
     enum RequestStatusTransition {
         Unchanged,
         NULLToUndecided,
@@ -70,6 +76,9 @@ library Multisig {
     }
 
     /// @dev Signer statuses.
+    /// @notice `Uninitialized` should be the first element as the first value is used
+    /// as the default value in Solidity. The sequence of the other
+    /// elements also shouldn't be changed.
     enum SignerStatus {
         Uninitialized,
         Removed,
