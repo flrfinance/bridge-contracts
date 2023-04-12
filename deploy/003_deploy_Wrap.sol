@@ -44,6 +44,7 @@ contract DeployWrap is WrapDeployer {
             validators: validators,
             tokens: tokensWMB,
             adminMultisig: 0x61D99Fd6AF946B8e35892e2A025fd01527e3DB92,
+            pauserNode: 0xaef52Ba3119eE28695E5AaA0788F11015E1DaD46,
             timelockDelay: 5 minutes
         });
 
@@ -69,6 +70,7 @@ contract DeployWrap is WrapDeployer {
             validators: validators,
             tokens: tokensWDR,
             adminMultisig: 0x61D99Fd6AF946B8e35892e2A025fd01527e3DB92,
+            pauserNode: 0xaef52Ba3119eE28695E5AaA0788F11015E1DaD46,
             timelockDelay: 5 minutes
         });
 
