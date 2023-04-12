@@ -138,10 +138,14 @@ contract WrapDeployer is Script {
 
         // Deploy the TimelockController contract.
         console2.log("Deploying TimelockController");
+        address[] memory proposers = new address[](1);
+        proposers[0] = wc.adminMultisig;
+        address[] memory executors = new address[](1);
+        executors[0] = wc.adminMultisig;
         TimelockController tlc = new TimelockController(
             wc.timelockDelay,
-            new address[](0),
-            new address[](0)
+            proposers,
+            executors
         );
         console2.log(
             "TimelockController contract deployed at %s",
