@@ -5,17 +5,28 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 import "../src/interfaces/IWrapMintBurn.sol";
 import "../src/interfaces/IWrapDepositRedeem.sol";
+import "./utils/Constants.sol";
 
-contract WhitelistWrap is Script {
-    address constant wrap = 0x9550c9651b681Ce9FE1f3D8c416F785e6350274c;
-    address constant token = 0xE99500AB4A413164DA49Af83B9824749059b46ce;
-    address constant mirrorToken = 0x767F3AB8900d8011856F18Da0Bf7cD46E85a429F;
+contract WhitelistWrap is Script, Constants {
+    // First run in COSTON and then in APOTHEM
+
+    address constant wrap = APOTHEM;
+    //address constant wrap = COSTON;
+
+    address constant token = WXDC_APOTHEM; // run in APOTHEM
+
+    address constant mirrorToken = WXDC_COSTON; // run in APOTHEM
+    //address constant mirrorToken = WXDC_APOTHEM; // run in COSTON
+
+    bool constant isWrapMintBurn = false; // run in APOTHEM
+    //bool constant isWrapMintBurn = true; // run in COSTON
+
     string constant tokenName = "Wrapped XDC";
     string constant tokenSymbol = "WXDC";
     uint256 constant minAmount = 1e18;
     uint256 constant maxAmount = 1e24;
     uint256 constant dailyLimit = 1e20;
-    bool constant isWrapMintBurn = false;
+
     bool constant isExistingToken = false;
 
     function run() external {

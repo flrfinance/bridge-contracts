@@ -1,0 +1,34 @@
+{
+  "transactions": [
+    {
+      "hash": "0x5232508408aa13af75a8fde46db053d9a49b3fd691586134d02040d4d44d275a",
+      "transactionType": "CALL",
+      "contractName": null,
+      "contractAddress": "0x309dE78df92208FABFa2F8202efb8395Ee20890D",
+      "function": null,
+      "arguments": null,
+      "rpc": "https://erpc.apothem.network",
+      "transaction": {
+        "type": "0x00",
+        "from": "0x0e06d7f60ac1d71492436f1eb1880e7fe47373cc",
+        "to": "0x309de78df92208fabfa2f8202efb8395ee20890d",
+        "gas": "0x27ece",
+        "value": "0x0",
+        "data": "0x2f2ff15dfcb9fcbfa83b897fb2d5cf4b58962164105c1e71489a37ef3ae0db3fdce576f6000000000000000000000000aef52ba3119ee28695e5aaa0788f11015e1dad46",
+        "nonce": "0x77"
+      },
+      "additionalContracts": []
+    }
+  ],
+  "receipts": [],
+  "libraries": [],
+  "pending": [
+    "0x5232508408aa13af75a8fde46db053d9a49b3fd691586134d02040d4d44d275a"
+  ],
+  "path": "/flr-wraps-contracts/broadcast/AddPauser.sol/51/run-latest.json",
+  "returns": {},
+  "timestamp": 1680196853,
+  "chain": 51,
+  "multi": false,
+  "commit": "8ad1bdc"
+}
