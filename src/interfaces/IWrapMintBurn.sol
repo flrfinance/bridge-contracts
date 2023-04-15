@@ -48,6 +48,8 @@ interface IWrapMintBurn is IWrap {
     ) external returns (address);
 
     /// @dev Allows the weak-admin to claim the accumulated protocol fees.
+    /// @param token Token to claim protocol fees for.
+    /// @param recipient Address of the protocol fee recipient.
     /// @notice Can only be called by the weak-admin.
-    function claimProtocolFees(address token) external;
+    function claimProtocolFees(address token, address recipient) external;
 }
