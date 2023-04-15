@@ -26,7 +26,7 @@ contract WhitelistWrap is Script, Constants {
     uint256 constant minAmount = 1e18;
     uint256 constant maxAmount = 1e24;
     uint256 constant dailyLimit = 1e20;
-    bool constant isWrapMintBurn = false;
+
     bool constant isExistingToken = false;
 
     function run() external {
