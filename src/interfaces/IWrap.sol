@@ -12,6 +12,12 @@ interface IWrap is IAccessControlEnumerable {
     /// @dev Thrown when an operation is performed on a paused Wrap contract.
     error ContractPaused();
 
+    /// @dev Thrown when the contract is not paused.
+    error ContractNotPaused();
+
+    /// @dev Thrown when the contract is already migrated.
+    error ContractMigrated();
+
     /// @dev Thrown when the token is not allowlisted or the amount
     /// being deposited/approved is not in the range of min/maxAmount.
     error InvalidTokenAmount();
@@ -22,9 +28,6 @@ interface IWrap is IAccessControlEnumerable {
     /// @dev Thrown when the fee being set is higher than the maximum
     /// fee allowed.
     error FeeExceedsMaxFee();
-
-    /// @dev Thrown when the ID is not same as the approveIndex.
-    error InvalidId();
 
     /// @dev Thrown when the recipient address is the zero address.
     error InvalidToAddress();
@@ -151,7 +154,7 @@ interface IWrap is IAccessControlEnumerable {
     /// @dev Update a token's configuration information.
     /// @param tokenInfo The token's new configuration info.
     /// @notice Set maxAmount to zero to disable the token.
-    /// @notice Can only be called by the owner.
+    /// @notice Can only be called by the weak-admin.
     function configureToken(
         address token,
         TokenInfo calldata tokenInfo
@@ -159,12 +162,12 @@ interface IWrap is IAccessControlEnumerable {
 
     /// @dev Set the multisig configuration.
     /// @param config Multisig config.
-    /// @notice Can only be called by the owner.
+    /// @notice Can only be called by the admin.
     function configureMultisig(Multisig.Config calldata config) external;
 
     /// @dev Configure validator fees.
     /// @param validatorFeeBPS Validator fee in basis points.
-    /// @notice Can only be called by the owner.
+    /// @notice Can only be called by the weak-admin.
     function configureValidatorFees(uint16 validatorFeeBPS) external;
 
     /// @dev Deposit tokens to bridge to the other side.
@@ -204,12 +207,12 @@ interface IWrap is IAccessControlEnumerable {
 
     /// @dev Pauses the contract.
     /// @notice The contract can be paused by all addresses
-    /// with pause role but can only be unpaused by the admin.
+    /// with pause role but can only be unpaused by the weak-admin.
     function pause() external;
 
     /// @dev Unpauses the contract.
     /// @notice The contract can be paused by all addresses
-    /// with pause role but can only be unpaused by the admin.
+    /// with pause role but can only be unpaused by the weak-admin.
     function unpause() external;
 
     /// @dev Add a new validator to the contract.
@@ -217,7 +220,7 @@ interface IWrap is IAccessControlEnumerable {
     /// @param isFirstCommittee True when adding the validator to the first committee.
     /// @param feeRecipient Address of the fee recipient.
     /// false when adding the validator to the second committee.
-    /// @notice Can only be called by the owner.
+    /// @notice Can only be called by the admin.
     function addValidator(
         address validator,
         bool isFirstCommittee,
@@ -234,7 +237,7 @@ interface IWrap is IAccessControlEnumerable {
 
     /// @dev Remove existing validator from the contract.
     /// @param validator Address of the validator.
-    /// @notice Can only be called by the owner of the contract.
+    /// @notice Can only be called by the weak-admin.
     /// @notice The fees accumulated by the validator are distributed before being removed.
     function removeValidator(address validator) external;
 
@@ -246,6 +249,12 @@ interface IWrap is IAccessControlEnumerable {
 
     /// @dev Forcefully set next next execution index.
     /// @param index The new next execution index.
-    /// @notice Can only be called by the owner of the contract.
+    /// @notice Can only be called by the admin of the contract.
     function forceSetNextExecutionIndex(uint256 index) external;
+
+    /// @dev Migrates the contract to a new address.
+    /// @param _newContract Address of the new contract.
+    /// @notice This function can only be called once in the lifetime of this
+    /// contract by the admin.
+    function migrate(address _newContract) external;
 }

@@ -12,6 +12,7 @@ import { MultisigHelpers } from "./utils/MultisigHelpers.sol";
 
 abstract contract WrapTest is TestAsserter, MultisigHelpers {
     address constant admin = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
+    address constant weakAdmin = 0x7568bd5dFC84dF4D494D1f7D40BBC28f2224fe06;
     address constant pauser = 0x88A52Ace8A863B91e77c766eB1DD5f11780E2430;
     address constant user = 0x85bAd7dC21CC7a95549b5D957Ef6f9813b5B4141;
 
@@ -19,7 +20,8 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
     string testTokenSymbol = "TT";
 
     bytes32 PAUSE_ROLE = keccak256("PAUSE");
-    bytes32 DEFAULT_ADMIN_ROLE = 0x00;
+    bytes32 WEAK_ADMIN_ROLE = keccak256("WEAK_ADMIN");
+    bytes32 DEFAULT_ADMIN_ROLE = 0x0;
 
     Multisig.Config config;
     WrapHarness wrap;
@@ -64,7 +66,7 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
     event Transfer(address indexed from, address indexed to, uint256 value);
 
     modifier withPauser() {
-        vm.prank(admin);
+        vm.prank(weakAdmin);
         wrap.grantRole(PAUSE_ROLE, pauser);
         _;
     }
@@ -124,7 +126,7 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
     }
 
     modifier withTokenInfo(IWrap.TokenInfo memory newTokenInfo) {
-        vm.prank(admin);
+        vm.prank(weakAdmin);
         tokenInfo = newTokenInfo;
         wrap.configureToken(token, newTokenInfo);
         _;
@@ -234,10 +236,6 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         vm.roll(2);
     }
 
-    function testConstructorSetupRole() public {
-        assertTrue(wrap.hasRole(wrap.DEFAULT_ADMIN_ROLE(), admin));
-    }
-
     function testConstructorMultisigConfigure() public {
         (
             uint8 actualFirstCommitteeAcceptanceQuorum,
@@ -251,6 +249,10 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
             actualSecondCommitteeAcceptanceQuorum,
             secondCommitteeAcceptanceQuorum
         );
+    }
+
+    function testConstructorMigratedContract() public {
+        assertEq(wrap.migratedContract(), address(0));
     }
 
     function _testOnDeposit(
@@ -373,7 +375,7 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         withValidators
     {
         address newValidatorAFeeRecipient = address(4242);
-        vm.prank(admin);
+        vm.prank(weakAdmin);
         wrap.configureValidatorFeeRecipient(
             validatorA,
             newValidatorAFeeRecipient
@@ -384,7 +386,7 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         );
 
         address newValidatorBFeeRecipient = address(1717);
-        vm.prank(admin);
+        vm.prank(weakAdmin);
         wrap.configureValidatorFeeRecipient(
             validatorB,
             newValidatorBFeeRecipient
@@ -395,17 +397,17 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         );
     }
 
-    function testConfigureValidatorFeeRecipientIfCallerIsNotAdmin()
+    function testConfigureValidatorFeeRecipientIfCallerIsNotWeakAdmin()
         public
         withToken
         withValidators
     {
         vm.prank(user);
-        _expectMissingRoleRevert(user, DEFAULT_ADMIN_ROLE);
+        _expectMissingRoleRevert(user, WEAK_ADMIN_ROLE);
         wrap.configureValidatorFeeRecipient(validatorA, address(4242));
 
         vm.prank(user);
-        _expectMissingRoleRevert(user, DEFAULT_ADMIN_ROLE);
+        _expectMissingRoleRevert(user, WEAK_ADMIN_ROLE);
         wrap.configureValidatorFeeRecipient(validatorB, address(1717));
     }
 
@@ -538,7 +540,7 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
             expectedValidatorAFeeBalance
         );
 
-        vm.prank(admin);
+        vm.prank(weakAdmin);
         wrap.removeValidator(validatorA);
 
         vm.prank(user);
@@ -1366,7 +1368,7 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
     }
 
     function testConfigureToken() public withToken {
-        vm.prank(admin);
+        vm.prank(weakAdmin);
         uint256 newMaxAmount = 1337;
         uint256 newMinAmount = 10;
         uint256 newDailyLimit = 100 * 10 ** 18;
@@ -1398,7 +1400,7 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
     }
 
     function testConfigureTokenRevertsIfMinAmountIsZero() public withToken {
-        vm.prank(admin);
+        vm.prank(weakAdmin);
         vm.expectRevert(IWrap.InvalidTokenConfig.selector);
         wrap.configureToken(
             token,
@@ -1407,41 +1409,44 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
     }
 
     function testConfigureTokenRevertsIfTokenHasNotBeenAdded() public {
-        vm.prank(admin);
+        vm.prank(weakAdmin);
         vm.expectRevert(IWrap.InvalidTokenConfig.selector);
         wrap.configureToken(token, tokenInfo);
     }
 
-    function testConfigureTokenRevertsIfCallerIsNotAdmin() public withToken {
+    function testConfigureTokenRevertsIfCallerIsNotWeakAdmin()
+        public
+        withToken
+    {
         vm.prank(user);
-        _expectMissingRoleRevert(user, DEFAULT_ADMIN_ROLE);
+        _expectMissingRoleRevert(user, WEAK_ADMIN_ROLE);
         wrap.configureToken(token, tokenInfo);
     }
 
     function testConfigureValidatorFees() public {
         uint16 newValidatorFeeBPS = validatorFeeBPS / 2;
-        vm.prank(admin);
+        vm.prank(weakAdmin);
         wrap.configureValidatorFees(newValidatorFeeBPS);
         assertEq(wrap.validatorFeeBPS(), newValidatorFeeBPS);
     }
 
     function testConfigureValidatorFeesCanBeSetToZero() public {
-        vm.prank(admin);
+        vm.prank(weakAdmin);
         wrap.configureValidatorFees(0);
         assertEq(wrap.validatorFeeBPS(), 0);
     }
 
     function testConfigureValidatorFeesRevertsIfFeeExceedsMax() public {
         uint16 maxFeeBPS = wrap.exposed_maxFeeBPS();
-        vm.startPrank(admin);
+        vm.startPrank(weakAdmin);
         vm.expectRevert(IWrap.FeeExceedsMaxFee.selector);
         wrap.configureValidatorFees(maxFeeBPS + 1);
         vm.stopPrank();
     }
 
-    function testConfigureValidatorFeesRevertsIfCallerIsNotAdmin() public {
+    function testConfigureValidatorFeesRevertsIfCallerIsNotWeakAdmin() public {
         vm.prank(user);
-        _expectMissingRoleRevert(user, DEFAULT_ADMIN_ROLE);
+        _expectMissingRoleRevert(user, WEAK_ADMIN_ROLE);
         wrap.configureValidatorFees(validatorFeeBPS / 2);
     }
 
@@ -1520,31 +1525,45 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
 
     function testUnpause() public withPaused {
         assertTrue(wrap.paused());
-        vm.prank(admin);
+        vm.prank(weakAdmin);
         wrap.unpause();
         assertFalse(wrap.paused());
     }
 
     function testUnpauseIfAlreadyUnpaused() public {
         assertFalse(wrap.paused());
-        vm.prank(admin);
+        vm.prank(weakAdmin);
         wrap.unpause();
         assertFalse(wrap.paused());
     }
 
-    function testUnpauseRevertsIfCallerIsPauserButNotAdmin() public withPaused {
+    function testUnpauseRevertsIfCallerIsPauserButNotWeakAdmin()
+        public
+        withPaused
+    {
         assertTrue(wrap.hasRole(PAUSE_ROLE, pauser));
-        assertFalse(wrap.hasRole(DEFAULT_ADMIN_ROLE, pauser));
+        assertFalse(wrap.hasRole(WEAK_ADMIN_ROLE, pauser));
         vm.prank(pauser);
-        _expectMissingRoleRevert(pauser, DEFAULT_ADMIN_ROLE);
+        _expectMissingRoleRevert(pauser, WEAK_ADMIN_ROLE);
         wrap.unpause();
     }
 
-    function testUnpauseRevertsIfCallerIsNotAdmin() public withPaused {
-        assertFalse(wrap.hasRole(DEFAULT_ADMIN_ROLE, user));
+    function testUnpauseRevertsIfCallerIsNotWeakAdmin() public withPaused {
+        assertFalse(wrap.hasRole(WEAK_ADMIN_ROLE, user));
         vm.prank(user);
-        _expectMissingRoleRevert(user, DEFAULT_ADMIN_ROLE);
+        _expectMissingRoleRevert(user, WEAK_ADMIN_ROLE);
         wrap.unpause();
+    }
+
+    function testUnpauseRevertsIfContractsAlreadyMigrated() public withPaused {
+        address newWrap = address(_deployWrap());
+        vm.prank(admin);
+        wrap.migrate(newWrap);
+
+        vm.prank(weakAdmin);
+        vm.expectRevert(IWrap.ContractMigrated.selector);
+        wrap.unpause();
+        assertTrue(wrap.paused());
     }
 
     function _testAddValidator(Committee committee) internal {
@@ -1617,7 +1636,7 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
     function _testRemoveValidator(
         Committee committee
     ) internal withValidator(committee) {
-        vm.prank(admin);
+        vm.prank(weakAdmin);
         wrap.removeValidator(validator);
         Multisig.SignerInfo memory validatorInfo = wrap
             .exposed_multisigSignerInfo(validator);
@@ -1632,21 +1651,21 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         _testRemoveValidator(Committee.Second);
     }
 
-    function testRemoveValidatorFromFirstCommitteeRevertsIfCallerIsNotAdmin()
+    function testRemoveValidatorFromFirstCommitteeRevertsIfCallerIsNotWeakAdmin()
         public
         withValidator(Committee.First)
     {
         vm.prank(user);
-        _expectMissingRoleRevert(user, DEFAULT_ADMIN_ROLE);
+        _expectMissingRoleRevert(user, WEAK_ADMIN_ROLE);
         wrap.removeValidator(validator);
     }
 
-    function testRemoveValidatorFromSecondCommitteeRevertsIfCallerIsNotAdmin()
+    function testRemoveValidatorFromSecondCommitteeRevertsIfCallerIsNotWeakAdmin()
         public
         withValidator(Committee.Second)
     {
         vm.prank(user);
-        _expectMissingRoleRevert(user, DEFAULT_ADMIN_ROLE);
+        _expectMissingRoleRevert(user, WEAK_ADMIN_ROLE);
         wrap.removeValidator(validator);
     }
 
@@ -1661,5 +1680,52 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
         uint256 newNextExecutionIndex = wrap.nextExecutionIndex() + 1;
         vm.prank(admin);
         wrap.forceSetNextExecutionIndex(newNextExecutionIndex);
+    }
+
+    function _testOnMigrate() internal virtual;
+
+    function testOnMigrate() public {
+        _testOnMigrate();
+    }
+
+    // TODO: use this in Wrap{MintBurn,DepositRedeem} constructors
+    function _deployWrap() internal virtual returns (WrapHarness);
+
+    function testMigrateRevertsIfCallerIsNotAdmin() public withPaused {
+        address newWrap = address(_deployWrap());
+
+        vm.prank(user);
+        _expectMissingRoleRevert(user, DEFAULT_ADMIN_ROLE);
+        wrap.migrate(newWrap);
+
+        vm.prank(weakAdmin);
+        _expectMissingRoleRevert(weakAdmin, DEFAULT_ADMIN_ROLE);
+        wrap.migrate(newWrap);
+    }
+
+    function testMigrateRevertsIfContractsNotPaused() public {
+        address newWrap = address(_deployWrap());
+        vm.prank(admin);
+        vm.expectRevert(IWrap.ContractNotPaused.selector);
+        wrap.migrate(newWrap);
+    }
+
+    function testMigrateRevertsIfContractsAlreadyMigrated() public withPaused {
+        address newWrap = address(_deployWrap());
+        vm.prank(admin);
+        wrap.migrate(newWrap);
+
+        vm.prank(admin);
+        vm.expectRevert(IWrap.ContractMigrated.selector);
+        wrap.migrate(newWrap);
+    }
+
+    function testMigrate() public withToken withPaused {
+        address newWrap = address(_deployWrap());
+
+        vm.prank(admin);
+        wrap.migrate(newWrap);
+
+        assertEq(wrap.migratedContract(), newWrap);
     }
 }

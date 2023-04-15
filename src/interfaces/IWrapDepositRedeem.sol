@@ -12,7 +12,7 @@ interface IWrapDepositRedeem is IWrap {
     /// on the other side.
     /// @param tokenInfo Information associated with the token.
     /// @notice Set maxAmount to zero to disable the token.
-    /// @notice Can only be called by the owner.
+    /// @notice Can only be called by the weak-admin.
     function addToken(
         address token,
         address mirrorToken,

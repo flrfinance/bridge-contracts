@@ -105,4 +105,8 @@ abstract contract WrapHarness is Wrap {
     function exposed_maxFeeBPS() external pure returns (uint16) {
         return Wrap.maxFeeBPS;
     }
+
+    function exposed_onMigrate(address _newContract) external {
+        return onMigrate(_newContract);
+    }
 }

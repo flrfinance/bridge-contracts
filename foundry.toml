@@ -3,4 +3,8 @@ src = 'src'
 out = 'out'
 libs = ['lib']
 
+[rpc_endpoints]
+source = 'http://127.0.0.1:8545' # XDC
+target = 'http://127.0.0.1:8546' # Flare
+
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config

@@ -2,6 +2,9 @@
 pragma solidity ^0.8.13;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {
+    IAccessControl
+} from "@openzeppelin/contracts/access/IAccessControl.sol";
 
 import { WrapTest } from "./Wrap.t.sol";
 import { IWrap } from "../src/interfaces/IWrap.sol";
@@ -17,12 +20,16 @@ contract WrapMintBurnTest is WrapTest {
 
     uint8 mirrorTokenDecimals = 18;
 
+    bytes32 constant TOKEN_PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    bytes32 constant TOKEN_MINTER_ROLE = keccak256("MINTER_ROLE");
+
     function _addToken() internal override {
         mirrorToken = _generateMirrorToken();
-        vm.prank(admin);
+        vm.prank(weakAdmin);
         token = wmb.createAddToken(
             testTokenName,
             testTokenSymbol,
+            address(0),
             mirrorToken,
             mirrorTokenDecimals,
             tokenInfo
@@ -45,6 +52,14 @@ contract WrapMintBurnTest is WrapTest {
         vm.prank(admin);
         wmb = new WrapMintBurnHarness(config, protocolFeeBPS, validatorFeeBPS);
         wrap = WrapHarness(wmb);
+
+        assertTrue(wrap.hasRole(wrap.DEFAULT_ADMIN_ROLE(), admin));
+        assertTrue(wrap.hasRole(wrap.WEAK_ADMIN_ROLE(), admin));
+
+        vm.prank(admin);
+        wrap.grantRole(WEAK_ADMIN_ROLE, weakAdmin);
+        vm.prank(admin);
+        wrap.renounceRole(WEAK_ADMIN_ROLE, admin);
     }
 
     function testConstructorProtocolFeeBPS() public {
@@ -144,36 +159,37 @@ contract WrapMintBurnTest is WrapTest {
 
     function testConfigureProtocolFees() public {
         uint16 newProtocolFeeBPS = protocolFeeBPS / 2;
-        vm.prank(admin);
+        vm.prank(weakAdmin);
         wmb.configureProtocolFees(newProtocolFeeBPS);
         assertEq(wmb.protocolFeeBPS(), newProtocolFeeBPS);
     }
 
     function testConfigureProtocolFeesCanBeSetToZero() public {
-        vm.prank(admin);
+        vm.prank(weakAdmin);
         wmb.configureProtocolFees(0);
         assertEq(wmb.protocolFeeBPS(), 0);
     }
 
     function testConfigureProtocolFeesRevertsIfFeeExceedsMax() public {
         uint16 maxFeeBPS = wmb.exposed_maxFeeBPS();
-        vm.startPrank(admin);
+        vm.startPrank(weakAdmin);
         vm.expectRevert(IWrap.FeeExceedsMaxFee.selector);
         wmb.configureProtocolFees(maxFeeBPS + 1);
         vm.stopPrank();
     }
 
-    function testConfigureProtocolFeesRevertsIfCallerIsNotAdmin() public {
+    function testConfigureProtocolFeesRevertsIfCallerIsNotWeakAdmin() public {
         vm.prank(user);
-        _expectMissingRoleRevert(user, DEFAULT_ADMIN_ROLE);
+        _expectMissingRoleRevert(user, WEAK_ADMIN_ROLE);
         wmb.configureProtocolFees(protocolFeeBPS / 2);
     }
 
     function testCreateAddToken() public {
-        vm.prank(admin);
+        vm.prank(weakAdmin);
         token = wmb.createAddToken(
             testTokenName,
             testTokenSymbol,
+            address(0),
             mirrorToken,
             mirrorTokenDecimals,
             tokenInfo
@@ -182,12 +198,13 @@ contract WrapMintBurnTest is WrapTest {
         _assertCorrectAddTokenState();
     }
 
-    function testCreateAddTokenRevertsIfCallerIsNotAdmin() public {
+    function testCreateAddTokenRevertsIfCallerIsNotWeakAdmin() public {
         vm.prank(user);
-        _expectMissingRoleRevert(user, DEFAULT_ADMIN_ROLE);
+        _expectMissingRoleRevert(user, WEAK_ADMIN_ROLE);
         wmb.createAddToken(
             testTokenName,
             testTokenSymbol,
+            address(0),
             mirrorToken,
             mirrorTokenDecimals,
             tokenInfo
@@ -206,20 +223,20 @@ contract WrapMintBurnTest is WrapTest {
         _executeDeposit(1000, user);
         expectedProtocolFee += wrap.exposed_calculateFee(1000, protocolFeeBPS);
 
-        uint256 initialAdminBalance = IERC20(token).balanceOf(admin);
+        uint256 initialWeakAdminBalance = IERC20(token).balanceOf(weakAdmin);
         uint256 initialCustodianBalance = IERC20(token).balanceOf(_custodian());
 
         assertEq(wmb.accumulatedProtocolFees(token), expectedProtocolFee);
 
-        vm.prank(admin);
+        vm.prank(weakAdmin);
         vm.expectEmit(true, true, true, true, token);
-        emit Transfer(address(wrap), admin, expectedProtocolFee);
+        emit Transfer(address(wrap), weakAdmin, expectedProtocolFee);
         wmb.claimProtocolFees(token);
 
         assertEq(wmb.accumulatedProtocolFees(token), 0);
         assertEq(
-            IERC20(token).balanceOf(admin),
-            initialAdminBalance + expectedProtocolFee
+            IERC20(token).balanceOf(weakAdmin),
+            initialWeakAdminBalance + expectedProtocolFee
         );
         assertEq(
             IERC20(token).balanceOf(address(wrap)),
@@ -227,16 +244,16 @@ contract WrapMintBurnTest is WrapTest {
         );
     }
 
-    function testClaimProtocolFeesRevertsIfCallerIsNotAdmin()
+    function testClaimProtocolFeesRevertsIfCallerIsNotWeakAdmin()
         public
         withToken
         withValidators
     {
-        assertFalse(wrap.hasRole(DEFAULT_ADMIN_ROLE, user));
+        assertFalse(wrap.hasRole(WEAK_ADMIN_ROLE, user));
         _executeApproveExecute(1000, user);
         _executeDeposit(1000, user);
         vm.prank(user);
-        _expectMissingRoleRevert(user, DEFAULT_ADMIN_ROLE);
+        _expectMissingRoleRevert(user, WEAK_ADMIN_ROLE);
         wmb.claimProtocolFees(token);
     }
 
@@ -381,5 +398,31 @@ contract WrapMintBurnTest is WrapTest {
             IERC20(token).balanceOf(_custodian()),
             initialCustodianBalance + fee
         );
+    }
+
+    function _deployWrap() internal override returns (WrapHarness) {
+        vm.prank(admin);
+        WrapMintBurnHarness newWMB = new WrapMintBurnHarness(
+            config,
+            protocolFeeBPS,
+            validatorFeeBPS
+        );
+        return WrapHarness(newWMB);
+    }
+
+    // TODO: test with multiple tokens
+    function _testOnMigrate() internal override withToken {
+        address oldWrap = address(wrap);
+        address newWrap = address(_deployWrap());
+
+        wrap.exposed_onMigrate(newWrap);
+
+        assertTrue(IAccessControl(token).hasRole(DEFAULT_ADMIN_ROLE, newWrap));
+        assertTrue(IAccessControl(token).hasRole(TOKEN_MINTER_ROLE, newWrap));
+        assertTrue(IAccessControl(token).hasRole(TOKEN_PAUSER_ROLE, newWrap));
+
+        assertFalse(IAccessControl(token).hasRole(DEFAULT_ADMIN_ROLE, oldWrap));
+        assertFalse(IAccessControl(token).hasRole(TOKEN_MINTER_ROLE, oldWrap));
+        assertFalse(IAccessControl(token).hasRole(TOKEN_PAUSER_ROLE, oldWrap));
     }
 }
