@@ -20,6 +20,10 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     /// @dev The role ID for addresses that can pause the contract.
     bytes32 public constant PAUSE_ROLE = keccak256("PAUSE");
 
+    /// @dev The role ID for addresses that has weak admin power.
+    /// Weak admin can perform administrative tasks that don't risk user's funds.
+    bytes32 public constant WEAK_ADMIN_ROLE = keccak256("WEAK_ADMIN");
+
     /// @dev Max protocol/validator fee that can be set by the owner.
     uint16 constant maxFeeBPS = 500; // should be less than 10,000
 
@@ -40,7 +44,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
 
     /// @dev Array of all the tokens added.
     /// @notice A token in the list might not be active.
-    address[] tokens;
+    address[] public tokens;
 
     /// @dev Dual multisig to manage validators,
     /// attestations and request quorum.
@@ -52,8 +56,13 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     /// @dev Validator fee basis points.
     uint16 public validatorFeeBPS;
 
+    /// @dev Address of the migrated contract.
+    address public migratedContract;
+
     constructor(Multisig.Config memory config, uint16 _validatorFeeBPS) {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _setupRole(WEAK_ADMIN_ROLE, msg.sender);
+        _setRoleAdmin(PAUSE_ROLE, WEAK_ADMIN_ROLE);
         multisig.configure(config);
         configureValidatorFees(_validatorFeeBPS);
     }
@@ -86,10 +95,30 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         address to
     ) internal virtual returns (uint256 totalFee, uint256 validatorFee);
 
-    /// @dev Modifier to make a function callable only when the contract is not paused.
+    /// @dev Hook executed before the bridge migration.
+    /// @param _newContract Address of the new contract.
+    function onMigrate(address _newContract) internal virtual;
+
+    /// @dev Modifier to check if the contract is not paused.
     modifier isNotPaused() {
         if (paused == true) {
             revert ContractPaused();
+        }
+        _;
+    }
+
+    /// @dev Modifier to check if the contract is paused.
+    modifier isPaused() {
+        if (paused == false) {
+            revert ContractNotPaused();
+        }
+        _;
+    }
+
+    /// @dev Modifier to check that contract is not already migrated.
+    modifier notMigrated() {
+        if (migratedContract != address(0)) {
+            revert ContractMigrated();
         }
         _;
     }
@@ -138,6 +167,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         uint256 recentBlockNumber
     ) {
         // Prevent malicious validators from pre-producing attestation signatures.
+        // This is helpful in case validators are temporarily compromised.
         // `blockhash(recentBlockNumber)` yields `0x0` when `recentBlockNumber < block.number - 256`.
         if (
             recentBlockHash == bytes32(0) ||
@@ -313,7 +343,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     function configureToken(
         address token,
         TokenInfo calldata tokenInfo
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external onlyRole(WEAK_ADMIN_ROLE) {
         _configureTokenInfo(
             token,
             tokenInfo.minAmount,
@@ -326,7 +356,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     /// @inheritdoc IWrap
     function configureValidatorFees(
         uint16 _validatorFeeBPS
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) public onlyRole(WEAK_ADMIN_ROLE) {
         if (_validatorFeeBPS > maxFeeBPS) {
             revert FeeExceedsMaxFee();
         }
@@ -370,7 +400,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     }
 
     /// @inheritdoc IWrap
-    function unpause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function unpause() external notMigrated onlyRole(WEAK_ADMIN_ROLE) {
         paused = false;
     }
 
@@ -387,7 +417,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     /// @inheritdoc IWrap
     function removeValidator(
         address validator
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external onlyRole(WEAK_ADMIN_ROLE) {
         multisig.removeSigner(validator);
     }
 
@@ -395,7 +425,7 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
     function configureValidatorFeeRecipient(
         address validator,
         address feeRecipient
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external onlyRole(WEAK_ADMIN_ROLE) {
         validatorFeeRecipients[validator] = feeRecipient;
     }
 
@@ -421,5 +451,13 @@ abstract contract Wrap is IWrap, AccessControlEnumerable {
         uint256 index
     ) public onlyRole(DEFAULT_ADMIN_ROLE) {
         multisig.forceSetNextExecutionIndex(index);
+    }
+
+    /// @inheritdoc IWrap
+    function migrate(
+        address _newContract
+    ) public isPaused notMigrated onlyRole(DEFAULT_ADMIN_ROLE) {
+        onMigrate(_newContract);
+        migratedContract = _newContract;
     }
 }

@@ -24,8 +24,10 @@ contract WhitelistWrap is Script, Constants {
     string constant tokenName = "Wrapped XDC";
     string constant tokenSymbol = "WXDC";
     uint256 constant minAmount = 1e18;
-    uint256 constant maxAmount = 1e21;
-    uint256 constant dailyLimit = 1e24;
+    uint256 constant maxAmount = 1e24;
+    uint256 constant dailyLimit = 1e20;
+    bool constant isWrapMintBurn = false;
+    bool constant isExistingToken = false;
 
     function run() external {
         IWrap.TokenInfo memory ti = IWrap.TokenInfo(
@@ -39,6 +41,7 @@ contract WhitelistWrap is Script, Constants {
             address wrapToken = IWrapMintBurn(wrap).createAddToken(
                 tokenName,
                 tokenSymbol,
+                isExistingToken ? token : address(0),
                 mirrorToken,
                 18,
                 ti

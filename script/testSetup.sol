@@ -52,6 +52,7 @@ contract TestSetup is Script {
         address wrapToken = wrapMintBurn.createAddToken(
             "TestWrap",
             "WTEST",
+            address(0),
             address(token),
             18,
             ti
