@@ -66,7 +66,7 @@ abstract contract WrapTest is TestAsserter, MultisigHelpers {
     event Transfer(address indexed from, address indexed to, uint256 value);
 
     modifier withPauser() {
-        vm.prank(admin);
+        vm.prank(weakAdmin);
         wrap.grantRole(PAUSE_ROLE, pauser);
         _;
     }

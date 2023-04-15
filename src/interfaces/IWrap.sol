@@ -29,9 +29,6 @@ interface IWrap is IAccessControlEnumerable {
     /// fee allowed.
     error FeeExceedsMaxFee();
 
-    /// @dev Thrown when the ID is not same as the approveIndex.
-    error InvalidId();
-
     /// @dev Thrown when the recipient address is the zero address.
     error InvalidToAddress();
 

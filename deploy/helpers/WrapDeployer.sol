@@ -45,6 +45,7 @@ contract WrapDeployer is Script {
         ValidatorConfig[] validators;
         TokenConfig[] tokens;
         address adminMultisig;
+        address pauserNode;
         uint256 timelockDelay;
     }
 
@@ -138,10 +139,14 @@ contract WrapDeployer is Script {
 
         // Deploy the TimelockController contract.
         console2.log("Deploying TimelockController");
+        address[] memory proposers = new address[](1);
+        proposers[0] = wc.adminMultisig;
+        address[] memory executors = new address[](1);
+        executors[0] = wc.adminMultisig;
         TimelockController tlc = new TimelockController(
             wc.timelockDelay,
-            new address[](0),
-            new address[](0)
+            proposers,
+            executors
         );
         console2.log(
             "TimelockController contract deployed at %s",
@@ -155,6 +160,15 @@ contract WrapDeployer is Script {
         console2.log(
             "TimelockController TIMELOCK_ADMIN_ROLE transferred to admin multisig at %s",
             address(wc.adminMultisig)
+        );
+
+        // Grant the pauser node pause role.
+        bytes32 PAUSE_ROLE = w.PAUSE_ROLE();
+        w.grantRole(PAUSE_ROLE, wc.pauserNode);
+
+        console2.log(
+            "Granted PAUSE_ROLE to pauser node at %s",
+            address(wc.pauserNode)
         );
 
         // Give the admin multisig weak-admin role.
