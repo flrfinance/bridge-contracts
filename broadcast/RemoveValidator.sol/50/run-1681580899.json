@@ -1,0 +1,34 @@
+{
+  "transactions": [
+    {
+      "hash": "0x8b5d17bc5566162238dff189d4689be9408104ea9caaa653e2baa848c075d77a",
+      "transactionType": "CALL",
+      "contractName": null,
+      "contractAddress": "0xE01dd6c2784fcaA10Db6fd7C8B51B06F2Ff7907a",
+      "function": null,
+      "arguments": null,
+      "rpc": "https://erpc.xinfin.network",
+      "transaction": {
+        "type": "0x00",
+        "from": "0x425a0dff9838ef45b2f90610a97c1fd7341cc8dc",
+        "to": "0xe01dd6c2784fcaa10db6fd7c8b51b06f2ff7907a",
+        "gas": "0xafa7",
+        "value": "0x0",
+        "data": "0x40a141ff000000000000000000000000675767258f825b707063a96590a31005f1944ca8",
+        "nonce": "0x16"
+      },
+      "additionalContracts": []
+    }
+  ],
+  "receipts": [],
+  "libraries": [],
+  "pending": [
+    "0x8b5d17bc5566162238dff189d4689be9408104ea9caaa653e2baa848c075d77a"
+  ],
+  "path": "/flr-wraps-contracts/broadcast/RemoveValidator.sol/50/run-latest.json",
+  "returns": {},
+  "timestamp": 1681580899,
+  "chain": 50,
+  "multi": false,
+  "commit": "3c79e1a"
+}

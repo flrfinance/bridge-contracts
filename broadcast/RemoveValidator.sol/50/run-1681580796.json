@@ -1,0 +1,62 @@
+{
+  "transactions": [
+    {
+      "hash": "0xbdf4181b94eef98399806cbc31f7af02ecc9b9a0f4162aa96665b6d9cd30e3d8",
+      "transactionType": "CALL",
+      "contractName": null,
+      "contractAddress": "0xE01dd6c2784fcaA10Db6fd7C8B51B06F2Ff7907a",
+      "function": null,
+      "arguments": null,
+      "rpc": "https://erpc.xinfin.network",
+      "transaction": {
+        "type": "0x00",
+        "from": "0x425a0dff9838ef45b2f90610a97c1fd7341cc8dc",
+        "to": "0xe01dd6c2784fcaa10db6fd7c8b51b06f2ff7907a",
+        "gas": "0xafa7",
+        "value": "0x0",
+        "data": "0x40a141ff000000000000000000000000ebaa49c421a6158f280a04a0ded08189110cdf1f",
+        "nonce": "0x15"
+      },
+      "additionalContracts": []
+    }
+  ],
+  "receipts": [
+    {
+      "transactionHash": "0xbdf4181b94eef98399806cbc31f7af02ecc9b9a0f4162aa96665b6d9cd30e3d8",
+      "transactionIndex": "0x2",
+      "blockHash": "0xeeead5f68979bb35021ad0cad8ec540d64452d4de3990ceee9ff782cb30e80da",
+      "blockNumber": "0x3887e33",
+      "from": "0x425A0DfF9838EF45b2f90610a97C1Fd7341Cc8Dc",
+      "to": "0xE01dd6c2784fcaA10Db6fd7C8B51B06F2Ff7907a",
+      "cumulativeGasUsed": "0x120f9",
+      "gasUsed": "0x7dc3",
+      "contractAddress": null,
+      "logs": [
+        {
+          "address": "0xE01dd6c2784fcaA10Db6fd7C8B51B06F2Ff7907a",
+          "topics": [
+            "0x1803740ef72fc16e647c10fe2d31cf61a1578081960c2e3fb7f5aa957e82f550",
+            "0x000000000000000000000000ebaa49c421a6158f280a04a0ded08189110cdf1f"
+          ],
+          "data": "0x",
+          "blockHash": "0x7c58f2b1b7b98653abe811cee29c9fd34ad1c554de3b74fc910babe5fa78d8bf",
+          "blockNumber": "0x3887e33",
+          "transactionHash": "0xbdf4181b94eef98399806cbc31f7af02ecc9b9a0f4162aa96665b6d9cd30e3d8",
+          "transactionIndex": "0x2",
+          "logIndex": "0x2",
+          "removed": false
+        }
+      ],
+      "status": "0x1",
+      "logsBloom": "0x00000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000008000000000000000000000000000000000000200000000000000000000010000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008020000000000000008"
+    }
+  ],
+  "libraries": [],
+  "pending": [],
+  "path": "/flr-wraps-contracts/broadcast/RemoveValidator.sol/50/run-latest.json",
+  "returns": {},
+  "timestamp": 1681580796,
+  "chain": 50,
+  "multi": false,
+  "commit": "3c79e1a"
+}

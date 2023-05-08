@@ -1,0 +1,34 @@
+{
+  "transactions": [
+    {
+      "hash": "0x7a2327b12bce7c8786707a6958bde30e3a8da04709ea40c89532fd26846bf4d1",
+      "transactionType": "CALL",
+      "contractName": null,
+      "contractAddress": "0xE01dd6c2784fcaA10Db6fd7C8B51B06F2Ff7907a",
+      "function": null,
+      "arguments": null,
+      "rpc": "https://songbird.flr.finance/ext/bc/C/rpc",
+      "transaction": {
+        "type": "0x00",
+        "from": "0x425a0dff9838ef45b2f90610a97c1fd7341cc8dc",
+        "to": "0xe01dd6c2784fcaa10db6fd7c8b51b06f2ff7907a",
+        "gas": "0xa5c6",
+        "value": "0x0",
+        "data": "0x40a141ff000000000000000000000000ebaa49c421a6158f280a04a0ded08189110cdf1f",
+        "nonce": "0x13"
+      },
+      "additionalContracts": []
+    }
+  ],
+  "receipts": [],
+  "libraries": [],
+  "pending": [
+    "0x7a2327b12bce7c8786707a6958bde30e3a8da04709ea40c89532fd26846bf4d1"
+  ],
+  "path": "/flr-wraps-contracts/broadcast/RemoveValidator.sol/19/run-latest.json",
+  "returns": {},
+  "timestamp": 1681580816,
+  "chain": 19,
+  "multi": false,
+  "commit": "3c79e1a"
+}

@@ -1,0 +1,47 @@
+{
+  "transactions": [
+    {
+      "hash": "0xc3273220fb63aa9d0ebeee1b56857ecc977840aac0e3f302dec3bbdead050def",
+      "transactionType": "CALL",
+      "contractName": null,
+      "contractAddress": "0xE01dd6c2784fcaA10Db6fd7C8B51B06F2Ff7907a",
+      "function": null,
+      "arguments": null,
+      "rpc": "https://erpc.xinfin.network",
+      "transaction": {
+        "type": "0x00",
+        "from": "0x425a0dff9838ef45b2f90610a97c1fd7341cc8dc",
+        "to": "0xe01dd6c2784fcaa10db6fd7c8b51b06f2ff7907a",
+        "gas": "0xa016",
+        "value": "0x0",
+        "data": "0x47adf63000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000003",
+        "nonce": "0x17"
+      },
+      "additionalContracts": []
+    }
+  ],
+  "receipts": [
+    {
+      "transactionHash": "0xc3273220fb63aa9d0ebeee1b56857ecc977840aac0e3f302dec3bbdead050def",
+      "transactionIndex": "0x1",
+      "blockHash": "0x458b1bf005168dddd1336d9dd3ddca3406a05eb44d2c60c70117e3bff28aa752",
+      "blockNumber": "0x3887eef",
+      "from": "0x425A0DfF9838EF45b2f90610a97C1Fd7341Cc8Dc",
+      "to": "0xE01dd6c2784fcaA10Db6fd7C8B51B06F2Ff7907a",
+      "cumulativeGasUsed": "0x732b",
+      "gasUsed": "0x732b",
+      "contractAddress": null,
+      "logs": [],
+      "status": "0x1",
+      "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "libraries": [],
+  "pending": [],
+  "path": "/flr-wraps-contracts/broadcast/ConfigureMultisig.sol/50/run-latest.json",
+  "returns": {},
+  "timestamp": 1681581173,
+  "chain": 50,
+  "multi": false,
+  "commit": "3c79e1a"
+}

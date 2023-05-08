@@ -1,0 +1,34 @@
+{
+  "transactions": [
+    {
+      "hash": "0xc3273220fb63aa9d0ebeee1b56857ecc977840aac0e3f302dec3bbdead050def",
+      "transactionType": "CALL",
+      "contractName": null,
+      "contractAddress": "0xE01dd6c2784fcaA10Db6fd7C8B51B06F2Ff7907a",
+      "function": null,
+      "arguments": null,
+      "rpc": "https://erpc.xinfin.network",
+      "transaction": {
+        "type": "0x00",
+        "from": "0x425a0dff9838ef45b2f90610a97c1fd7341cc8dc",
+        "to": "0xe01dd6c2784fcaa10db6fd7c8b51b06f2ff7907a",
+        "gas": "0xa016",
+        "value": "0x0",
+        "data": "0x47adf63000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000003",
+        "nonce": "0x17"
+      },
+      "additionalContracts": []
+    }
+  ],
+  "receipts": [],
+  "libraries": [],
+  "pending": [
+    "0xc3273220fb63aa9d0ebeee1b56857ecc977840aac0e3f302dec3bbdead050def"
+  ],
+  "path": "/flr-wraps-contracts/broadcast/ConfigureMultisig.sol/50/run-latest.json",
+  "returns": {},
+  "timestamp": 1681581166,
+  "chain": 50,
+  "multi": false,
+  "commit": "3c79e1a"
+}
