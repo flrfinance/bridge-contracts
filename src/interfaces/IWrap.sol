@@ -8,7 +8,7 @@ pragma solidity ^0.8.15;
  * Finance BV and the use of it is only permitted within the official platforms
  * and/or original products of Flare Finance B.V. and its licensed parties. Any
  * further enquiries regarding this copyright and possible licenses can be directed
- * to partners@flr.finance.
+ * to partners[at]flr.finance.
  *
  * The source code and any functionality deriving from it are provided "as is",
  * without warranty of any kind, express or implied, including but not limited to
